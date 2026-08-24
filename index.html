@@ -1282,6 +1282,13 @@ select {
     <section id="panel-recipients" role="tabpanel" aria-labelledby="tab-recipients" hidden>
       <div class="card rv">
         <div class="card-head">
+          <h2>Top recipients</h2>
+          <span class="sub" id="rec-top-sub">All five years · select a bar for the full profile</span>
+        </div>
+        <div id="rec-bars"></div>
+      </div>
+      <div class="card rv">
+        <div class="card-head">
           <h2>All recipients</h2>
           <span class="sub" id="rec-count" aria-live="polite">—</span>
         </div>
@@ -1296,13 +1303,6 @@ select {
         <div class="alpha" id="alpha" hidden></div>
         <ul id="rec-rows"></ul>
         <div class="empty" id="rec-empty" hidden>No recipients match — clear the search.</div>
-      </div>
-      <div class="card rv">
-        <div class="card-head">
-          <h2>Top recipients</h2>
-          <span class="sub" id="rec-top-sub">All five years · select a bar for the full profile</span>
-        </div>
-        <div id="rec-bars"></div>
       </div>
     </section>
 
