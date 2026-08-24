@@ -797,8 +797,43 @@ select {
 .mover-d.pos { color: var(--pass); }
 .mover-d.neg { color: var(--neg); }
 .mover-meta { grid-column: 1 / -1; font-size: 0.75rem; color: var(--ink-faint); }
+.mv-track { grid-column: 1 / -1; position: relative; height: 8px; border-radius: 4px; background: var(--tint); margin-top: 0.3rem; }
+.mv-fill { position: absolute; top: 0; bottom: 0; left: 0; width: var(--from); border-radius: 4px; }
+.mv-fill.pos { background: rgba(26, 107, 60, 0.28); border-right: 3px solid var(--pass); }
+.mv-fill.neg { background: rgba(167, 49, 42, 0.24); border-right: 3px solid var(--neg); }
+#movers.seen .mv-fill { width: var(--to); }
+.mv-tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink-dim); opacity: 0.55; border-radius: 1px; }
+@media (prefers-reduced-motion: no-preference) {
+  #movers .mover { opacity: 0; transform: translateY(10px); }
+  #movers.seen .mover { animation: waveIn 0.7s var(--ease) both; animation-delay: calc(var(--i) * 150ms + 120ms); }
+  #movers.seen .mv-fill { transition: width 0.9s var(--ease); transition-delay: calc(var(--i) * 150ms + 560ms); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #movers .mover { opacity: 1; transform: none; animation: none; }
+  .mv-fill { width: var(--to); }
+}
 
 /* recipients */
+.q-wrap { position: relative; flex: 1 1 260px; min-width: 0; }
+.q-wrap input { width: 100%; }
+.q-suggest {
+  position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 25;
+  background: var(--sheet); border-radius: var(--r-s);
+  box-shadow: 0 18px 44px -16px rgba(30, 26, 12, 0.5), inset 0 0 0 1px var(--rule-strong);
+  max-height: 330px; overflow-y: auto;
+}
+.q-suggest[hidden] { display: none; }
+.q-sug {
+  appearance: none; display: flex; gap: 0.6rem; align-items: baseline; width: 100%;
+  text-align: left; padding: 0.55rem 0.8rem; border: 0; border-bottom: 1px solid var(--rule);
+  background: none; font: inherit; cursor: pointer;
+}
+.q-sug:last-child { border-bottom: 0; }
+.q-sug:hover, .q-sug.on { background: var(--tint); }
+.q-sug .qs-kind { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); flex: none; width: 4.4rem; }
+.q-sug .qs-name { font-weight: 600; font-size: 0.85rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-sug .qs-meta { margin-left: auto; font-family: var(--mono); font-size: 0.7rem; color: var(--ink-dim); white-space: nowrap; }
+
 .rec-tools { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
 .rec-tools input { flex: 1 1 260px; background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: var(--r-s); padding: 0 0.85rem; height: 40px; }
 .rec-sort { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: var(--r-s); overflow: hidden; }
@@ -1277,7 +1312,10 @@ select {
         <div class="ledger-tools" id="ledger-tools">
           <div class="lt-row">
             <label class="sr-only" for="q">Search grants</label>
-            <input type="search" id="q" placeholder="Search recipient or purpose…" autocomplete="off">
+            <div class="q-wrap">
+              <input type="search" id="q" placeholder="Search recipient or purpose…" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="q-suggest">
+              <div class="q-suggest" id="q-suggest" role="listbox" aria-label="Search suggestions" hidden></div>
+            </div>
             <label class="sr-only" for="sort">Sort</label>
             <select id="sort">
               <option value="amount-desc">Amount ↓</option>
@@ -1294,6 +1332,10 @@ select {
               <option value="50000">$50K and up</option>
               <option value="250000">$250K and up</option>
               <option value="1000000">$1M and up</option>
+            </select>
+            <label class="sr-only" for="cat-sel">Category</label>
+            <select id="cat-sel">
+              <option value="">All categories</option>
             </select>
             <span class="lt-spacer" aria-hidden="true"></span>
             <button type="button" id="csv-btn" class="lt-btn" title="Download the rows currently in view">Export CSV</button>
@@ -2162,14 +2204,19 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     })();
     $('movers').innerHTML = (sMovers.length === 0
       ? `<li class="mover-none">No prior filed year to compare — ${SY} is the first in the record.</li>`
-      : '') + sMovers.map((m) => `
-      <li class="mover" data-ent="${esc(m.e.id)}">
+      : '') + (() => {
+      const mvMax = Math.max(1, ...sMovers.map((m) => Math.max(m.prev, m.cur)));
+      const pct = (v) => (v / mvMax * 100).toFixed(1);
+      return sMovers.map((m, i) => `
+      <li class="mover" style="--i:${i}" data-ent="${esc(m.e.id)}">
         <button type="button" class="mover-btn">
           <span class="mover-name">${esc(dc(m.e.display))}</span>
           <span class="mover-d ${m.d >= 0 ? 'pos' : 'neg'}">${m.d >= 0 ? '+' : '−'}${moneyCompact(Math.abs(m.d))}</span>
           <span class="mover-meta">${moneyCompact(m.prev)} → ${moneyCompact(m.cur)}</span>
+          <span class="mv-track" aria-hidden="true"><i class="mv-tick" style="left:${pct(m.prev)}%"></i><i class="mv-fill ${m.d >= 0 ? 'pos' : 'neg'}" style="--from:${pct(m.prev)}%;--to:${pct(m.cur)}%"></i></span>
         </button>
       </li>`).join('');
+    })();
     $('movers').querySelectorAll('.mover').forEach((li) => {
       li.querySelector('button').addEventListener('click', () => openProfile(li.dataset.ent));
     });
@@ -2471,6 +2518,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('q').value = state.q;
     $('sort').value = state.sort;
     $('min-amt').value = String(state.min);
+    if ($('cat-sel')) $('cat-sel').value = state.c || '';
   }
 
   // grants tab wiring
@@ -2493,6 +2541,47 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   });
   $('sort').addEventListener('change', () => { state.sort = $('sort').value; state.page = 0; writeHash(true); render(); });
   $('min-amt').addEventListener('change', () => { state.min = +$('min-amt').value; state.page = 0; writeHash(true); render(); });
+  $('cat-sel').innerHTML += catList.map((c) => `<option value="${esc(c.key)}">${esc(c.key)}</option>`).join('');
+  $('cat-sel').addEventListener('change', () => { state.c = $('cat-sel').value || null; state.page = 0; writeHash(true); render(); });
+
+  // typeahead: recipients and categories become precise filters; plain text is the fallback
+  {
+    const qEl = $('q'), box = $('q-suggest');
+    let sugIdx = -1;
+    const close = () => { box.hidden = true; box.innerHTML = ''; sugIdx = -1; qEl.setAttribute('aria-expanded', 'false'); };
+    const apply = (el) => {
+      const t = el.dataset.t;
+      if (t === 'r') { state.r = el.dataset.v; state.q = ''; }
+      else if (t === 'c') { state.c = el.dataset.v; state.q = ''; }
+      else { state.q = qEl.value.trim(); }
+      state.page = 0; syncControls(); writeHash(true); render(); close();
+    };
+    const build = () => {
+      const v = qEl.value.trim().toLowerCase();
+      if (v.length < 2) { close(); return; }
+      const ents = entList.filter((e) => e.display.toLowerCase().includes(v) || e.aliases.some((a) => a.toLowerCase().includes(v))).slice(0, 6);
+      const cats = catList.filter((c) => c.key.toLowerCase().includes(v)).slice(0, 2);
+      box.innerHTML = ents.map((e) =>
+        `<button type="button" class="q-sug" role="option" data-t="r" data-v="${esc(e.id)}"><span class="qs-kind">Recipient</span><span class="qs-name">${esc(dc(e.display))}</span><span class="qs-meta">${e.count} ${grantsWord(e.count)} \u00b7 ${moneyCompact(e.total)}</span></button>`).join('')
+        + cats.map((c) =>
+        `<button type="button" class="q-sug" role="option" data-t="c" data-v="${esc(c.key)}"><span class="qs-kind">Category</span><span class="qs-name">${esc(c.key)}</span><span class="qs-meta">${c.count} ${grantsWord(c.count)}</span></button>`).join('')
+        + `<button type="button" class="q-sug" role="option" data-t="q"><span class="qs-kind">Purposes</span><span class="qs-name">Search \u201c${esc(qEl.value.trim())}\u201d in every grant</span></button>`;
+      box.hidden = false; sugIdx = -1; qEl.setAttribute('aria-expanded', 'true');
+    };
+    qEl.addEventListener('input', build);
+    qEl.addEventListener('keydown', (e) => {
+      if (box.hidden) return;
+      const opts = [...box.querySelectorAll('.q-sug')];
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        sugIdx = (sugIdx + (e.key === 'ArrowDown' ? 1 : opts.length - 1) + opts.length) % opts.length;
+        opts.forEach((o, i) => o.classList.toggle('on', i === sugIdx));
+      } else if (e.key === 'Enter' && sugIdx >= 0) { e.preventDefault(); apply(opts[sugIdx]); }
+      else if (e.key === 'Escape') close();
+    });
+    box.addEventListener('mousedown', (e) => { const s = e.target.closest('.q-sug'); if (s) { e.preventDefault(); apply(s); } });
+    qEl.addEventListener('blur', () => setTimeout(close, 150));
+  }
   document.querySelectorAll('.lt-year').forEach((b) => {
     b.addEventListener('click', () => {
       state.y = b.dataset.y === 'all' ? null : (state.y === +b.dataset.y ? null : +b.dataset.y);
@@ -2779,7 +2868,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
           ens.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('seen'); obs.unobserve(en.target); } });
         }, { threshold: 0.5 })
       : null;
-    ['conc-top5', 'newret'].forEach((id) => {
+    ['conc-top5', 'newret', 'movers'].forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
       if (waveIO) waveIO.observe(el); else el.classList.add('seen');
