@@ -676,6 +676,87 @@ h1 {
   color: var(--ink-faint);
 }
 
+/* —— ledger toolbar v4 —— */
+.ledger-tools { position: sticky; top: 0; z-index: 6; background: var(--bg-elev); align-items: center; }
+.lt-years { display: inline-flex; gap: 0.3rem; flex-wrap: wrap; }
+.lt-year {
+  appearance: none;
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  padding: 0.34rem 0.7rem;
+  cursor: pointer;
+  color: var(--ink-dim);
+  transition: border-color var(--dur), background var(--dur), color var(--dur);
+}
+.lt-year:hover { border-color: var(--green); color: var(--ink); }
+.lt-year.active { background: var(--green); border-color: var(--green); color: var(--bg-elev); }
+.lt-spacer { flex: 1 1 auto; }
+.lt-btn {
+  appearance: none;
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: 0.42rem 0.75rem;
+  cursor: pointer;
+  color: var(--ink);
+  transition: border-color var(--dur), background var(--dur);
+}
+.lt-btn:hover { border-color: var(--green); background: var(--green-soft); }
+.grant-table .amt, .grant-table th.amt-h { text-align: right; }
+.ycell {
+  appearance: none; background: none; border: 0; padding: 0;
+  font: inherit; color: var(--ink-dim); cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.ycell:hover { color: var(--green); text-decoration: underline; }
+.scope-chips { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; margin-right: 0.5rem; }
+.scope-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--sans);
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: var(--bg-elev);
+  border: 1px solid var(--green);
+  border-radius: 999px;
+  padding: 0.32rem 0.75rem;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background var(--dur);
+}
+.scope-chip:hover { background: var(--green-soft); }
+.scope-chip .chip-x { color: var(--green); font-weight: 700; }
+.bubble.is-active {
+  border-color: var(--green);
+  box-shadow: inset 0 0 0 3px var(--bg-elev), inset 0 0 0 4px var(--green), 0 8px 22px rgba(64,52,28,0.18);
+}
+.rec-row.is-active { background: var(--bg-row); border-color: var(--green); }
+.pnum {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--copper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  width: 1.7rem; height: 1.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.6rem;
+  flex: 0 0 auto;
+}
+.panel-head { align-items: center; }
+.panel-head h2 { margin-right: auto; }
+@media (max-width: 719px) { .ledger-tools { position: static; } }
 .reveal {
   opacity: 0;
   transform: translateY(16px);
@@ -750,7 +831,7 @@ h1 {
   <section class="grid-main">
     <article class="panel reveal" aria-labelledby="trend-title">
       <div class="panel-head">
-        <h2 id="trend-title">Disbursements by tax year</h2>
+        <span class="pnum" aria-hidden="true">I</span><h2 id="trend-title">Disbursements by tax year</h2>
         <span class="sub">Hover · click a year to filter the page</span>
       </div>
       <div class="chart-wrap" id="chart-wrap">
@@ -761,7 +842,7 @@ h1 {
 
     <article class="panel reveal" aria-labelledby="bubble-title">
       <div class="panel-head">
-        <h2 id="bubble-title">Top recipients by dollars</h2>
+        <span class="pnum" aria-hidden="true">II</span><h2 id="bubble-title">Top recipients by dollars</h2>
         <span class="sub">Click any bubble to filter the page</span>
       </div>
       <div class="bubbles" id="bubbles" role="list"></div>
@@ -771,7 +852,7 @@ h1 {
 
   <section class="panel reveal" aria-labelledby="rec-title" style="margin-bottom:1.5rem">
     <div class="panel-head">
-      <h2 id="rec-title">Largest recipients · 2020–2024</h2>
+      <span class="pnum" aria-hidden="true">III</span><h2 id="rec-title">Largest recipients · 2020–2024</h2>
       <span class="sub">Aggregate across PASS years · click to filter the page</span>
     </div>
     <ol class="rec-list" id="rec-list"></ol>
@@ -779,8 +860,8 @@ h1 {
 
   <section class="panel reveal" aria-labelledby="ledger-title" id="ledger-sec">
     <div class="panel-head">
-      <h2 id="ledger-title">The full ledger</h2>
-      <span class="sub" id="ledger-sub">All 857 grants · 2020–2024</span>
+      <span class="pnum" aria-hidden="true">IV</span><h2 id="ledger-title">The full ledger</h2>
+      <span class="sub" id="ledger-sub" aria-live="polite">All 857 grants · 2020–2024</span>
     </div>
     <div class="scope-bar" id="scope-bar" hidden>
       <div class="scope-stats" id="scope-stats"></div>
@@ -799,6 +880,23 @@ h1 {
         <option value="year-asc">Year ↑</option>
         <option value="purpose-asc">Purpose A–Z</option>
       </select>
+      <select id="min-amt" aria-label="Minimum grant amount">
+        <option value="0">Any amount</option>
+        <option value="50000">$50K and up</option>
+        <option value="250000">$250K and up</option>
+        <option value="1000000">$1M and up</option>
+      </select>
+      <div class="lt-years" role="group" aria-label="Filter the page by tax year">
+        <button type="button" class="lt-year" data-y="all">All</button>
+        <button type="button" class="lt-year" data-y="2020">2020</button>
+        <button type="button" class="lt-year" data-y="2021">2021</button>
+        <button type="button" class="lt-year" data-y="2022">2022</button>
+        <button type="button" class="lt-year" data-y="2023">2023</button>
+        <button type="button" class="lt-year" data-y="2024">2024</button>
+      </div>
+      <span class="lt-spacer" aria-hidden="true"></span>
+      <button type="button" id="csv-btn" class="lt-btn" title="Download the rows currently in view">Export CSV</button>
+      <button type="button" id="link-btn" class="lt-btn" title="Copy a link that reopens this exact view">Copy link</button>
     </div>
     <div class="table-wrap">
       <table class="grant-table">
@@ -806,7 +904,7 @@ h1 {
           <tr>
             <th data-sort="year">Year</th>
             <th data-sort="recipient">Recipient</th>
-            <th data-sort="amount">Amount</th>
+            <th data-sort="amount" class="amt-h">Amount</th>
             <th data-sort="purpose">Purpose</th>
             <th>Loc</th>
           </tr>
@@ -816,7 +914,7 @@ h1 {
       <div class="empty" id="empty" hidden>No grants match this view.</div>
     </div>
     <div class="pager">
-      <span id="page-info">—</span>
+      <span id="page-info" aria-live="polite">—</span>
       <div>
         <button type="button" id="prev-page">Previous</button>
         <button type="button" id="next-page">Next</button>
@@ -910,14 +1008,12 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     return [...m.values()].sort((a, b) => b.total - a.total);
   };
   const grantsWord = (n) => n === 1 ? 'grant' : 'grants';
+  const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // —— count-up ——
   function animateCount(el, target, opts) {
     const { prefix = '', suffix = '', duration = 1400, format = (n) => Math.round(n).toLocaleString('en-US') } = opts || {};
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      el.textContent = prefix + format(target) + suffix;
-      return;
-    }
+    if (reducedMotion()) { el.textContent = prefix + format(target) + suffix; return; }
     const start = performance.now();
     function frame(t) {
       const p = Math.min(1, (t - start) / duration);
@@ -936,15 +1032,13 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
 
   document.getElementById('obj-ids').textContent = YEARS.map((y) => tieout[y].object_id).join(' · ');
 
-  // —— scope: the one piece of page-wide state ——
-  // null · {type:'year', key:2024} · {type:'recipient', key:'NAME AS FILED'}
-  let scope = null;
-  const scopeRows = () => {
-    if (!scope) return grants;
-    if (scope.type === 'year') return byYear[scope.key].grants;
-    const r = byRec.get(scope.key);
-    return r ? r.grants : [];
-  };
+  // —— scope: filters COMPOSE — year AND recipient can both be active ——
+  const scope = { y: null, r: null };
+  const hasScope = () => scope.y !== null || scope.r !== null;
+  const scopeRows = () => grants.filter((g) =>
+    (scope.y === null || g.y === scope.y) &&
+    (scope.r === null || g.r === scope.r)
+  );
 
   // —— year strip ——
   const strip = document.getElementById('year-strip');
@@ -963,7 +1057,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     strip.appendChild(btn);
   });
 
-  // —— trend chart (rebuilt on scope change; selected year emphasized) ——
+  // —— trend chart ——
   const svg = document.getElementById('trend-svg');
   const tip = document.getElementById('chart-tip');
   const wrap = document.getElementById('chart-wrap');
@@ -990,7 +1084,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
 
   let chartDrawn = false;
   function renderChart() {
-    const selYear = scope && scope.type === 'year' ? +scope.key : null;
+    const selYear = scope.y;
     const grid = [0.25, 0.5, 0.75, 1].map((f) => {
       const y = yAt(maxV * f);
       return `<line x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}" stroke="rgba(33,38,31,0.10)" stroke-width="1"/>
@@ -1009,7 +1103,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
         <text x="${x}" y="${H - 12}" text-anchor="middle" fill="${sel ? '#8a4a12' : '#565c4d'}" font-size="11" font-weight="${sel ? '700' : '400'}" font-family="Fraunces, Georgia, serif">${YEARS[i]}</text>
       </g>`;
     }).join('');
-    const drawAnim = (!chartDrawn && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches))
+    const drawAnim = (!chartDrawn && !reducedMotion())
       ? `stroke-dasharray="1200" stroke-dashoffset="1200">
       <animate attributeName="stroke-dashoffset" from="1200" to="0" dur="1.1s" fill="freeze" calcMode="spline" keySplines="0.22 1 0.36 1"/>`
       : '>';
@@ -1050,20 +1144,19 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     const ty = (svgRect.top - wrapRect.top) + pts[i][1] / H * svgRect.height;
     tip.innerHTML = `<strong>${y}</strong><span>${money(byYear[y].sum)} · ${byYear[y].count} grants · PASS</span>`;
     tip.classList.add('show');
-    // clamp inside the panel so the last year never clips
     const tw = tip.offsetWidth || 180;
     x = Math.max(tw / 2 + 6, Math.min(wrapRect.width - tw / 2 - 6, x));
     tip.style.left = x + 'px';
     tip.style.top = ty + 'px';
     svg.querySelectorAll('.halo').forEach((h, hi) => {
-      const sel = scope && scope.type === 'year' && YEARS[hi] === +scope.key;
+      const sel = scope.y !== null && YEARS[hi] === scope.y;
       h.setAttribute('opacity', hi === i || sel ? '1' : '0');
     });
   }
   function hideTip() {
     tip.classList.remove('show');
     svg.querySelectorAll('.halo').forEach((h, hi) => {
-      const sel = scope && scope.type === 'year' && YEARS[hi] === +scope.key;
+      const sel = scope.y !== null && YEARS[hi] === scope.y;
       h.setAttribute('opacity', sel ? '1' : '0');
     });
   }
@@ -1154,9 +1247,9 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     const h = bubbleStageHeight();
     bubbleHost.innerHTML = '';
     let items, note, mode;
-    if (scope && scope.type === 'recipient') {
-      // that recipient's giving, year by year — medallions per year
-      const r = byRec.get(scope.key);
+    if (scope.r !== null) {
+      // the selected recipient's giving, year by year (selected year ringed)
+      const r = byRec.get(scope.r);
       const per = YEARS.map((y) => ({
         name: String(y),
         total: r.grants.filter((g) => g.y === y).reduce((s, g) => s + g.a, 0),
@@ -1165,9 +1258,9 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       })).filter((it) => it.total > 0).sort((a, b) => b.total - a.total);
       items = per; mode = 'year';
       bubbleTitle.textContent = 'Giving by year';
-      note = `${dc(scope.key)} · ${money(r.total)} across ${per.length} ${per.length === 1 ? 'year' : 'years'}`;
+      note = `${dc(scope.r)} · ${money(r.total)} across ${per.length} ${per.length === 1 ? 'year' : 'years'} · click a year to narrow`;
     } else {
-      const src = scope ? topWithin(scopeRows()) : topAll;
+      const src = scope.y !== null ? topWithin(byYear[scope.y].grants) : topAll;
       items = src.slice(0, BUBBLE_COUNT).map((r) => ({ ...r }));
       mode = 'recipient';
       bubbleTitle.textContent = 'Top recipients by dollars';
@@ -1180,6 +1273,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const el = document.createElement('button');
       el.type = 'button';
       el.className = 'bubble';
+      if (mode === 'year' && scope.y !== null && n.year === scope.y) el.classList.add('is-active');
       if (n.r < 36) el.classList.add('is-tiny');
       if (n.r < 28) el.classList.add('is-micro');
       el.setAttribute('role', 'listitem');
@@ -1189,11 +1283,11 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const maxLen = n.r >= 72 ? 26 : n.r >= 50 ? 22 : 16;
       const label = mode === 'year' ? n.name : shortBubbleName(dc(n.name), maxLen);
       el.innerHTML = `<div class="b-inner"><div class="b-name">${esc(label)}</div><div class="b-amt">${moneyCompact(n.total)}</div></div>`;
-      el.title = `${mode === 'year' ? n.name : n.name} — ${money(n.total)} · ${n.count} ${grantsWord(n.count)}`;
+      el.title = `${n.name} — ${money(n.total)} · ${n.count} ${grantsWord(n.count)}`;
       el.setAttribute('aria-label', `${n.name}, ${money(n.total)}, ${n.count} ${grantsWord(n.count)}`);
       el.addEventListener('click', () => {
         if (mode === 'year') toggleYear(n.year);
-        else setScope({ type: 'recipient', key: n.name });
+        else toggleRecipient(n.name);
       });
       bubbleHost.appendChild(el);
     });
@@ -1211,10 +1305,10 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   const recSub = document.querySelector('[aria-labelledby="rec-title"] .sub');
   function renderRecipients() {
     recList.innerHTML = '';
-    if (scope && scope.type === 'recipient') {
-      const r = byRec.get(scope.key);
-      recTitle.textContent = 'Giving by year · ' + dc(scope.key);
-      if (recSub) recSub.textContent = 'Click a year to filter the page to it';
+    if (scope.r !== null) {
+      const r = byRec.get(scope.r);
+      recTitle.textContent = 'Giving by year · ' + dc(scope.r);
+      if (recSub) recSub.textContent = scope.y !== null ? `Filtered to ${scope.y} · click a year to switch` : 'Click a year to narrow to it';
       const per = YEARS.map((y) => ({
         y,
         total: r.grants.filter((g) => g.y === y).reduce((s, g) => s + g.a, 0),
@@ -1223,7 +1317,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const maxT = Math.max(...per.map((p) => p.total));
       per.forEach((p, i) => {
         const li = document.createElement('li');
-        li.className = 'rec-row';
+        li.className = 'rec-row' + (scope.y === p.y ? ' is-active' : '');
         li.tabIndex = 0;
         li.setAttribute('role', 'button');
         li.innerHTML = `
@@ -1241,9 +1335,9 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       });
       return;
     }
-    const src = scope ? topWithin(scopeRows()) : topAll;
-    recTitle.textContent = scope ? `Largest recipients · ${scope.key}` : 'Largest recipients · 2020–2024';
-    if (recSub) recSub.textContent = scope ? 'Within the filtered year · click to filter the page' : 'Aggregate across PASS years · click to filter the page';
+    const src = scope.y !== null ? topWithin(byYear[scope.y].grants) : topAll;
+    recTitle.textContent = scope.y !== null ? `Largest recipients · ${scope.y}` : 'Largest recipients · 2020–2024';
+    if (recSub) recSub.textContent = scope.y !== null ? 'Within the filtered year · click a recipient for their grants' : 'Aggregate across PASS years · click a recipient for their grants';
     const maxTot = src.length ? src[0].total : 1;
     src.slice(0, 20).forEach((r, i) => {
       const li = document.createElement('li');
@@ -1258,7 +1352,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
           <div class="bar-track"><div class="bar-fill" style="width:${(r.total / maxTot) * 100}%;animation-delay:${i * 0.03}s"></div></div>
         </div>
         <span class="rec-amt">${money(r.total)}</span>`;
-      const go = () => setScope({ type: 'recipient', key: r.name });
+      const go = () => toggleRecipient(r.name);
       li.addEventListener('click', go);
       li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
       recList.appendChild(li);
@@ -1266,7 +1360,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   }
 
   // —— the inline ledger ——
-  const table = { q: '', sort: 'amount-desc', page: 0, filtered: [] };
+  const table = { q: '', sort: 'amount-desc', page: 0, min: 0, filtered: [] };
   const tbody = document.getElementById('grant-tbody');
   const empty = document.getElementById('empty');
   const pageInfo = document.getElementById('page-info');
@@ -1277,30 +1371,39 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   const scopeStats = document.getElementById('scope-stats');
 
   function renderScopeBar() {
-    if (!scope) { scopeBar.hidden = true; return; }
+    if (!hasScope()) { scopeBar.hidden = true; return; }
     scopeBar.hidden = false;
-    if (scope.type === 'year') {
-      const t = tieout[String(scope.key)];
-      scopeStats.innerHTML = `
-        <div class="ds"><strong>Tax year ${scope.key}</strong>Page filtered</div>
-        <div class="ds"><strong>${money(t.grant_sum)}</strong>Grant schedule sum</div>
-        <div class="ds"><strong>${money(t.line25_col_d)}</strong>Line 25 col. (d)</div>
-        <div class="ds"><strong>${t.grant_count}</strong>Grant rows</div>
-        <div class="ds"><strong>PASS</strong>Δ $0 · ${t.object_id}</div>`;
-    } else {
-      const r = byRec.get(scope.key);
-      const yrs = [...r.years].sort().join(', ');
-      scopeStats.innerHTML = `
-        <div class="ds"><strong title="As filed: ${esc(scope.key)}">${esc(dc(scope.key))}</strong>Page filtered</div>
-        <div class="ds"><strong>${money(r.total)}</strong>Aggregate 2020–2024</div>
-        <div class="ds"><strong>${r.count}</strong>Grant rows</div>
-        <div class="ds"><strong>${yrs}</strong>Tax years</div>`;
+    const rows = scopeRows();
+    const sum = rows.reduce((s, g) => s + g.a, 0);
+    let chips = '';
+    if (scope.y !== null) {
+      chips += `<button type="button" class="scope-chip" data-clear="y" title="Remove the year filter">Tax year ${scope.y} <span class="chip-x">✕</span></button>`;
     }
+    if (scope.r !== null) {
+      chips += `<button type="button" class="scope-chip" data-clear="r" title="Remove the recipient filter — as filed: ${esc(scope.r)}">${esc(dc(scope.r))} <span class="chip-x">✕</span></button>`;
+    }
+    let stats = `<div class="ds"><strong>${money(sum)}</strong>${rows.length} ${grantsWord(rows.length)} in view</div>`;
+    if (scope.y !== null && scope.r === null) {
+      const t = tieout[String(scope.y)];
+      stats += `<div class="ds"><strong>PASS</strong>Δ $0 · sum = line 25 (d) · ${t.object_id}</div>`;
+    }
+    if (scope.r !== null) {
+      const r = byRec.get(scope.r);
+      stats += `<div class="ds"><strong>${money(r.total)}</strong>All years 2020–2024</div>`;
+    }
+    scopeStats.innerHTML = `<div class="scope-chips">${chips}</div>${stats}`;
   }
+  scopeStats.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-clear]');
+    if (!b) return;
+    if (b.dataset.clear === 'y') setScope({ y: null });
+    else setScope({ r: null });
+  });
 
   function applyFilterSort() {
     const q = table.q.trim().toLowerCase();
     let rows = scopeRows();
+    if (table.min > 0) rows = rows.filter((g) => g.a >= table.min);
     if (q) {
       rows = rows.filter((g) =>
         g.r.toLowerCase().includes(q) ||
@@ -1329,7 +1432,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     const slice = table.filtered.slice(start, start + PAGE);
     tbody.innerHTML = slice.map((g) => `
       <tr>
-        <td>${g.y}</td>
+        <td><button type="button" class="ycell" data-ycell="${g.y}" title="Filter the page to ${g.y}">${g.y}</button></td>
         <td><span class="recip" data-rec="${esc(g.r)}" title="As filed: ${esc(g.r)}" tabindex="0">${esc(dc(g.r))}</span></td>
         <td class="amt">${money(g.a)}</td>
         <td class="purpose" title="As filed: ${esc(g.p)}">${esc(dc(g.p))}</td>
@@ -1349,24 +1452,32 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       if (!s) return;
       th.classList.toggle('sorted', table.sort.startsWith(s));
     });
-    const scopeLabel = !scope ? 'All 857 grants · 2020–2024'
-      : scope.type === 'year' ? `Tax year ${scope.key} · ${total.toLocaleString('en-US')} ${grantsWord(total)}`
-      : `${dc(scope.key)} · ${total.toLocaleString('en-US')} ${grantsWord(total)}`;
-    if (ledgerSub) ledgerSub.textContent = scopeLabel;
+    const viewSum = table.filtered.reduce((s, g) => s + g.a, 0);
+    const parts = [];
+    if (scope.r !== null) parts.push(dc(scope.r));
+    if (scope.y !== null) parts.push(`Tax year ${scope.y}`);
+    const head = parts.length ? parts.join(' · ') : 'All grants · 2020–2024';
+    if (ledgerSub) ledgerSub.textContent =
+      `${head} · ${total.toLocaleString('en-US')} ${grantsWord(total)} · ${money(viewSum)} in view`;
+    document.querySelectorAll('.lt-year').forEach((b) => {
+      b.classList.toggle('active',
+        b.dataset.y === 'all' ? scope.y === null : +b.dataset.y === scope.y);
+    });
   }
 
   // —— scope transitions ——
   function setHash() {
-    const hash = !scope ? ''
-      : scope.type === 'year' ? `#year=${scope.key}`
-      : `#recipient=${encodeURIComponent(scope.key)}`;
+    const parts = [];
+    if (scope.y !== null) parts.push(`year=${scope.y}`);
+    if (scope.r !== null) parts.push(`recipient=${encodeURIComponent(scope.r)}`);
+    const hash = parts.length ? '#' + parts.join('&') : '';
     if (hash) { if (location.hash !== hash) history.pushState(null, '', hash); }
     else if (location.hash) history.pushState(null, '', location.pathname + location.search);
   }
 
   function renderScope() {
     strip.querySelectorAll('.year-chip').forEach((c) => {
-      c.classList.toggle('active', !!scope && scope.type === 'year' && +c.dataset.year === +scope.key);
+      c.classList.toggle('active', scope.y !== null && +c.dataset.year === scope.y);
     });
     renderChart();
     renderBubbles();
@@ -1376,33 +1487,87 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     applyFilterSort();
   }
 
-  function setScope(next) {
-    scope = next;
+  function setScope(patch, opts) {
+    if ('y' in patch) scope.y = patch.y;
+    if ('r' in patch) scope.r = patch.r;
     setHash();
     renderScope();
+    if (opts && opts.reveal) {
+      const sec = document.getElementById('ledger-sec');
+      if (sec) sec.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    }
   }
   function toggleYear(y) {
-    if (scope && scope.type === 'year' && +scope.key === +y) setScope(null);
-    else setScope({ type: 'year', key: y });
+    setScope({ y: scope.y === y ? null : y });
   }
-  document.getElementById('scope-clear').addEventListener('click', () => setScope(null));
+  function toggleRecipient(name) {
+    const turningOn = scope.r !== name;
+    setScope({ r: turningOn ? name : null }, { reveal: turningOn });
+  }
+  document.getElementById('scope-clear').addEventListener('click', () => setScope({ y: null, r: null }));
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && scope) setScope(null);
+    if (e.key === 'Escape' && hasScope()) setScope({ y: null, r: null });
   });
 
   // table interactions
   tbody.addEventListener('click', (e) => {
-    const el = e.target.closest('[data-rec]');
-    if (el) setScope({ type: 'recipient', key: el.getAttribute('data-rec') });
+    const yEl = e.target.closest('[data-ycell]');
+    if (yEl) { toggleYear(+yEl.dataset.ycell); return; }
+    const tr = e.target.closest('tr');
+    const el = tr && tr.querySelector('[data-rec]');
+    if (el) toggleRecipient(el.getAttribute('data-rec'));
   });
   tbody.addEventListener('keydown', (e) => {
     const el = e.target.closest('[data-rec]');
     if (el && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
-      setScope({ type: 'recipient', key: el.getAttribute('data-rec') });
+      toggleRecipient(el.getAttribute('data-rec'));
     }
   });
   qInput.addEventListener('input', () => { table.q = qInput.value; table.page = 0; applyFilterSort(); });
+  document.querySelectorAll('.lt-year').forEach((b) => {
+    b.addEventListener('click', () => {
+      if (b.dataset.y === 'all') setScope({ y: null });
+      else toggleYear(+b.dataset.y);
+    });
+  });
+  const minSel = document.getElementById('min-amt');
+  if (minSel) minSel.addEventListener('change', () => {
+    table.min = +minSel.value;
+    table.page = 0;
+    applyFilterSort();
+  });
+  const csvBtn = document.getElementById('csv-btn');
+  if (csvBtn) csvBtn.addEventListener('click', () => {
+    const rows = table.filtered;
+    const head = 'tax_year,recipient_as_filed,amount,purpose_as_filed,city,state,irs_object_id';
+    const csv = [head].concat(rows.map((g) =>
+      [g.y, g.r, g.a, g.p, g.c, g.s, g.o].map((v) => {
+        const s = String(v == null ? '' : v);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const parts = [];
+    if (scope.r !== null) parts.push(scope.r.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40));
+    if (scope.y !== null) parts.push(String(scope.y));
+    a.download = 'oishei-grants' + (parts.length ? '-' + parts.join('-') : '') + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  });
+  const linkBtn = document.getElementById('link-btn');
+  if (linkBtn) linkBtn.addEventListener('click', () => {
+    const url = location.href;
+    const done = () => {
+      const old = linkBtn.textContent;
+      linkBtn.textContent = 'Copied ✓';
+      setTimeout(() => { linkBtn.textContent = old; }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+    else done();
+  });
   sortSel.addEventListener('change', () => { table.sort = sortSel.value; table.page = 0; applyFilterSort(); });
   document.getElementById('prev-page').addEventListener('click', () => {
     if (table.page > 0) { table.page--; renderPage(); }
@@ -1425,21 +1590,16 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     });
   });
 
-  // hash routing (deep links: #year=2024 · #recipient=NAME)
+  // hash routing: #year=2024 · #recipient=NAME · #year=2024&recipient=NAME
   function routeFromHash() {
     const h = location.hash.slice(1);
-    if (!h) { if (scope) { scope = null; renderScope(); } return; }
-    const params = Object.fromEntries(h.split('&').map((p) => {
+    const params = Object.fromEntries(h.split('&').filter(Boolean).map((p) => {
       const i = p.indexOf('=');
       return i < 0 ? [p, ''] : [p.slice(0, i), decodeURIComponent(p.slice(i + 1))];
     }));
-    if (params.year && YEARS.includes(+params.year)) {
-      scope = { type: 'year', key: +params.year };
-      renderScope();
-    } else if (params.recipient && byRec.has(params.recipient)) {
-      scope = { type: 'recipient', key: params.recipient };
-      renderScope();
-    }
+    scope.y = params.year && YEARS.includes(+params.year) ? +params.year : null;
+    scope.r = params.recipient && byRec.has(params.recipient) ? params.recipient : null;
+    renderScope();
   }
   window.addEventListener('popstate', routeFromHash);
   window.addEventListener('hashchange', routeFromHash);
