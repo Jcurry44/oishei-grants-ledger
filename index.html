@@ -637,6 +637,13 @@ select {
 
 /* quiet craft: each element arrives the way its meaning suggests */
 @media (prefers-reduced-motion: no-preference) {
+  /* first-entry cascade: rows exist before the card earns .in, so only the entrance staggers —
+     re-renders while filtering repaint instantly because new nodes never transition from nothing */
+  .card.rv:not(.in) #grant-tbody tr, .card.rv:not(.in) .gcard, .card.rv:not(.in) .rec-item { opacity: 0; }
+  .card.in #grant-tbody tr, .card.in .gcard, .card.in .rec-item {
+    opacity: 1; transition: opacity 0.45s var(--ease);
+    transition-delay: calc(var(--ri, 0) * 22ms);
+  }
   #trend:not(.seen) + #tr-cards .tr-card { opacity: 0; transform: translateY(8px); }
   #trend.seen + #tr-cards .tr-card {
     opacity: 1; transform: none;
@@ -817,7 +824,8 @@ select {
 .q-wrap { position: relative; flex: 1 1 260px; min-width: 0; }
 .q-wrap input { width: 100%; }
 .q-suggest {
-  position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 25;
+  position: absolute; top: calc(100% + 5px); left: 0; z-index: 25;
+  width: max-content; min-width: 100%; max-width: min(540px, calc(100vw - 28px));
   background: var(--sheet); border-radius: var(--r-s);
   box-shadow: 0 18px 44px -16px rgba(30, 26, 12, 0.5), inset 0 0 0 1px var(--rule-strong);
   max-height: 330px; overflow-y: auto;
@@ -831,7 +839,7 @@ select {
 .q-sug:last-child { border-bottom: 0; }
 .q-sug:hover, .q-sug.on { background: var(--tint); }
 .q-sug .qs-kind { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); flex: none; width: 4.4rem; }
-.q-sug .qs-name { font-weight: 600; font-size: 0.85rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-sug .qs-name { font-weight: 600; font-size: 0.85rem; min-width: 0; }
 .q-sug .qs-meta { margin-left: auto; font-family: var(--mono); font-size: 0.7rem; color: var(--ink-dim); white-space: nowrap; }
 
 .rec-tools { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
@@ -1272,7 +1280,7 @@ select {
     </section>
 
     <section id="panel-recipients" role="tabpanel" aria-labelledby="tab-recipients" hidden>
-      <div class="card">
+      <div class="card rv">
         <div class="card-head">
           <h2>All recipients</h2>
           <span class="sub" id="rec-count" aria-live="polite">—</span>
@@ -1299,7 +1307,7 @@ select {
     </section>
 
     <section id="panel-grants" role="tabpanel" aria-labelledby="tab-grants" hidden>
-      <div class="card" id="ledger-top">
+      <div class="card rv" id="ledger-top">
         <div class="card-head">
           <h2>The ledger</h2>
           <span class="sub" id="view-line" aria-live="polite">—</span>
@@ -2259,8 +2267,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('rec-count').textContent = `${list.length.toLocaleString('en-US')} of ${sEnts.length} recipients${SY !== null ? ' in ' + SY : ''} · ${money(list.reduce((s,e)=>s+e.total,0))}`;
     $('rec-empty').hidden = list.length > 0;
 
-    const item = (e) => `
-      <li>
+    const item = (e, ri) => `
+      <li style="--ri:${Math.min(ri || 0, 18)}">
         <button type="button" class="rec-item" data-ent="${esc(e.id)}">
           <span class="ri-name" title="As filed: ${esc(e.aliases.join(' · '))}">${esc(dc(e.display))}${e.aliases.length > 1 ? ' <span class="merged-flag">▸' + e.aliases.length + '</span>' : ''}</span>
           <span class="ri-meta">${e.count} ${grantsWord(e.count)} · ${[...e.years].sort().join(', ')} · <span class="ri-share">${(e.total / S_GRAND * 100).toFixed(e.total / S_GRAND >= 0.01 ? 1 : 2)}% of ${SY !== null ? SY : 'all'} dollars</span></span>
@@ -2297,14 +2305,14 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       }
       $('rec-rows').innerHTML = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([L, es]) => `
         <li class="letter-head" id="letter-${L}">${L}<span class="lh-n">${es.length} · ${money(es.reduce((s,e)=>s+e.total,0))}</span></li>
-        ${es.map(item).join('')}`).join('');
+        ${es.map((e, ri) => item(e, ri)).join('')}`).join('');
     } else {
       alphaEl.hidden = true;
       list.sort((a, b) => b.total - a.total);
       const N = isMobile() ? 25 : 50;
       const showAll = recExpanded || q || list.length <= N;
       const slice = showAll ? list : list.slice(0, N);
-      $('rec-rows').innerHTML = slice.map(item).join('') + (showAll ? '' :
+      $('rec-rows').innerHTML = slice.map((e, ri) => item(e, ri)).join('') + (showAll ? '' :
         `<li><button type="button" class="show-all" id="rec-more">Show all ${list.length} recipients — top ${N} shown, ${money(list.slice(N).reduce((s,e)=>s+e.total,0))} in the rest</button></li>`);
       const more = document.getElementById('rec-more');
       if (more) more.addEventListener('click', () => { recExpanded = true; renderRecipients(); });
@@ -2471,8 +2479,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     }
 
     // desktop table
-    $('grant-tbody').innerHTML = slice.map((g) => `
-      <tr>
+    $('grant-tbody').innerHTML = slice.map((g, ri) => `
+      <tr style="--ri:${Math.min(ri, 18)}">
         <td><button type="button" class="ycell" data-y="${g.y}" aria-label="Filter to tax year ${g.y}">${g.y}</button></td>
         <td><button type="button" class="recip" data-rec="${esc(g.r)}" title="As filed: ${esc(g.r)}">${esc(dc(g.r))}</button></td>
         <td class="amt">${money(g.a)}</td>
@@ -2480,8 +2488,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
         <td class="loc">${esc([dc(g.c || ''), g.s].filter(Boolean).join(', '))}</td>
       </tr>`).join('');
     // mobile cards
-    $('grant-cards').innerHTML = slice.map((g) => `
-      <li class="gcard">
+    $('grant-cards').innerHTML = slice.map((g, ri) => `
+      <li class="gcard" style="--ri:${Math.min(ri, 12)}">
         <button type="button" class="gcard-btn" data-rec="${esc(g.r)}" aria-label="${esc(dc(g.r))}, ${money(g.a)}, ${g.y}. Opens the recipient profile.">
           <div class="gc-top"><span class="gc-y">${g.y}</span><span class="gc-a">${money(g.a)}</span></div>
           <div class="gc-r">${esc(dc(g.r))}</div>
