@@ -256,6 +256,61 @@ h1 {
   .tabs.has-ink .tab[aria-selected="true"] { border-bottom-color: var(--copper); }
 }
 
+/* the sidebar — the desktop app shell, cut from the same cloth as the cover */
+.side { display: none; }
+@media (min-width: 1100px) {
+  body { padding-left: 236px; }
+  .side {
+    display: flex; flex-direction: column; gap: 1.5rem;
+    position: fixed; top: 0; left: 0; bottom: 0; width: 236px;
+    background: var(--cover); padding: 1.4rem 1.1rem 1.2rem; z-index: 30;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .tabs { display: none; }
+}
+.side-brand { display: flex; gap: 0.6rem; align-items: center; }
+.side-mark {
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(209, 144, 73, 0.5);
+  color: var(--copper-bright); font-family: var(--serif); font-weight: 700; font-size: 1.15rem;
+  display: grid; place-items: center;
+}
+.side-title { font-family: var(--serif); font-weight: 600; font-size: 0.97rem; line-height: 1.15; color: #f6efdd; }
+.side-title span { display: block; font-family: var(--sans); font-weight: 500; font-size: 0.6rem; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(246, 239, 221, 0.55); margin-top: 0.3rem; }
+.side-nav { display: flex; flex-direction: column; gap: 0.15rem; }
+.side-nav button {
+  appearance: none; background: none; border: 0; cursor: pointer;
+  display: flex; align-items: baseline; gap: 0.55rem;
+  padding: 0.5rem 0.65rem; border-radius: 8px;
+  color: rgba(246, 239, 221, 0.72); font: inherit; font-weight: 600; font-size: 0.88rem; text-align: left;
+  transition: background var(--dur), color var(--dur);
+}
+.side-nav button::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none;
+  box-shadow: inset 0 0 0 1.5px rgba(246, 239, 221, 0.4); transform: translateY(-1px);
+  transition: background var(--dur), box-shadow var(--dur);
+}
+.side-nav button:hover { background: rgba(255, 255, 255, 0.05); color: #f6efdd; }
+.side-nav button[aria-current="page"] { background: rgba(255, 255, 255, 0.08); color: #f6efdd; }
+.side-nav button[aria-current="page"]::before { background: var(--copper-bright); box-shadow: none; }
+.side button:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 2px; }
+.sn-count { margin-left: auto; font-family: var(--mono); font-size: 0.66rem; color: rgba(246, 239, 221, 0.45); font-weight: 500; }
+.side-scope { border-top: 1px solid rgba(255, 255, 255, 0.09); padding-top: 1.05rem; }
+.ss-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(246, 239, 221, 0.5); margin-bottom: 0.55rem; }
+.ss-rail { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
+.ss-rail button {
+  appearance: none; border: 0; cursor: pointer; font: inherit;
+  font-family: var(--mono); font-size: 0.74rem; padding: 0.42rem 0; border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05); color: rgba(246, 239, 221, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: background var(--dur), color var(--dur), box-shadow var(--dur);
+}
+.ss-rail button:hover { background: rgba(255, 255, 255, 0.1); color: #f6efdd; }
+.ss-rail button.on { background: var(--copper-bright); color: #2b1804; box-shadow: none; font-weight: 700; }
+.ss-note { font-size: 0.64rem; line-height: 1.5; color: rgba(246, 239, 221, 0.42); margin-top: 0.7rem; }
+.side-foot { margin-top: auto; font-family: var(--mono); font-size: 0.64rem; color: rgba(246, 239, 221, 0.5); }
+@media print { .side { display: none !important; } body { padding-left: 0 !important; } }
+
 /* panels: enter motion */
 [role="tabpanel"] { animation: panelIn 240ms var(--ease); }
 @keyframes panelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -703,6 +758,7 @@ select {
 .nr-r { font-size: 0.78rem; color: var(--ink-dim); }
 #movers { list-style: none; margin: 0.2rem 0 0; padding: 0; }
 @media (min-width: 1000px) { #movers { display: grid; grid-template-columns: 1fr 1fr; gap: 0 2.2rem; } }
+.mover-none { padding: 0.9rem 0.2rem; color: var(--ink-dim); font-size: 0.85rem; list-style: none; }
 .mover-btn {
   appearance: none; background: none; border: 0; cursor: pointer; width: 100%;
   display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0.1rem 0.9rem;
@@ -981,6 +1037,25 @@ select {
 </style>
 </head>
 <body>
+
+<aside class="side" aria-label="Sections and scope">
+  <div class="side-brand">
+    <span class="side-mark" aria-hidden="true">O</span>
+    <span class="side-title">Grants Ledger<span>The John R. Oishei Foundation</span></span>
+  </div>
+  <nav class="side-nav" aria-label="Sections">
+    <button type="button" data-tab="overview">Overview</button>
+    <button type="button" data-tab="recipients">Recipients <span class="sn-count" id="sn-recipients"></span></button>
+    <button type="button" data-tab="grants">Grants <span class="sn-count" id="sn-grants"></span></button>
+    <button type="button" data-tab="methodology">Methodology</button>
+  </nav>
+  <div class="side-scope">
+    <div class="ss-label">Tax year</div>
+    <div class="ss-rail" id="year-rail"></div>
+    <p class="ss-note">Scopes every tab. Methodology always shows all filed years.</p>
+  </div>
+  <div class="side-foot">5 / 5 years reconcile · Δ $0</div>
+</aside>
 <a class="skip" href="#main">Skip to content</a>
 <noscript>
 <div style="max-width:900px;margin:0 auto;padding:0.75rem 1.25rem;font:0.85rem/1.5 sans-serif;color:#f2efe4;background:#1e4634">JavaScript is off — the headline figures are the verified totals; the interactive ledger needs JavaScript.</div>
@@ -1574,7 +1649,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     if (location.hash !== hash) {
       if (push) history.pushState(null, '', hash);
       else history.replaceState(null, '', hash);
-    }
+      if (typeof syncSide === 'function') syncSide();
+  }
   }
 
   // ---------- scoped rows ----------
@@ -1629,12 +1705,6 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     requestAnimationFrame(frame);
   }
   animateCount($('kpi-total'), GRAND, { prefix: '$', duration: 1500 });
-  animateCount($('kpi-orgs'), entList.length, { duration: 1000 });
-  $('kpi-median').textContent = money(median);
-  const dPct = (latestDelta * 100);
-  $('kpi-delta').textContent = (dPct > 0 ? '+' : '−') + Math.abs(dPct).toFixed(1) + '%';
-  $('kpi-delta').classList.add(dPct >= 0 ? 'up' : 'down');
-  $('kpi-delta-hint').textContent = `${LATEST} vs ${PREV} disbursements`;
   $('obj-ids').textContent = YEARS.map((y) => tieout[y].object_id).join(' · ');
 
   // ---------- tabs ----------
@@ -1676,6 +1746,43 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   });
   $('explore-btn').addEventListener('click', () => { setTab('grants'); $('panel-grants').scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth' }); });
   $('badge-btn').addEventListener('click', () => setTab('methodology'));
+
+  // sidebar: nav + the global year rail (one state.y, every surface)
+  function syncSide() {
+    document.querySelectorAll('.side-nav [data-tab]').forEach((b) => {
+      if (b.dataset.tab === state.tab) b.setAttribute('aria-current', 'page');
+      else b.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('#year-rail [data-yr]').forEach((b) => {
+      const v = b.dataset.yr === 'all' ? null : +b.dataset.yr;
+      b.classList.toggle('on', state.y === v);
+      b.setAttribute('aria-pressed', state.y === v ? 'true' : 'false');
+    });
+    const sy = state.y;
+    const nOrgs = sy === null ? entList.length : entList.filter((e) => e.years.has(sy)).length;
+    const nGrants = sy === null ? grants.length : byYear[sy].count;
+    const put = (sel, v) => { const el = document.querySelector(sel); if (el) el.textContent = v; };
+    put('#sn-recipients', nOrgs); put('#sn-grants', nGrants);
+    put('#tab-recipients .tcount', nOrgs); put('#tab-grants .tcount', nGrants);
+  }
+  {
+    const rail = document.getElementById('year-rail');
+    if (rail) {
+      rail.innerHTML = ['all'].concat(YEARS).map((y) =>
+        `<button type="button" data-yr="${y}" aria-pressed="false">${y === 'all' ? 'All' : y}</button>`).join('');
+      rail.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-yr]');
+        if (!b) return;
+        state.y = b.dataset.yr === 'all' ? null : +b.dataset.yr;
+        state.page = 0;
+        writeHash(true);
+        render();
+      });
+    }
+    document.querySelectorAll('.side-nav [data-tab]').forEach((b) =>
+      b.addEventListener('click', () => { returnTo = null; updateReturnChip(); setTab(b.dataset.tab); }));
+    syncSide();
+  }
 
   // ---------- overview ----------
   function renderTrend() {
@@ -1806,6 +1913,34 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   }
 
   function renderOverview() {
+    // the global year scope: one state.y drives every panel below the cover
+    const SY = state.y;
+    const S_GRAND = SY === null ? GRAND : byYear[SY].sum;
+    const sEnts = SY === null ? entList
+      : entList.map((e) => {
+          const t = entYearSum(e, SY);
+          return t > 0 ? { ...e, total: t, count: e.grants.filter((g) => g.y === SY).length } : null;
+        }).filter(Boolean).sort((a, b) => b.total - a.total);
+    const sCatList = SY === null ? catList
+      : (() => {
+          const m = new Map();
+          grants.forEach((g) => {
+            if (g.y !== SY) return;
+            const k = catOf(g);
+            if (!m.has(k)) m.set(k, { key: k, sum: 0, count: 0 });
+            const t = m.get(k); t.sum += g.a; t.count++;
+          });
+          return [...m.values()].sort((a, b) => b.sum - a.sum).map((c) => ({ ...c, color: catColorOf(c.key) }));
+        })();
+    const sPrev = SY === null ? PREV : (SY > YEARS[0] ? SY - 1 : null);
+    const sMovers = SY === null ? movers
+      : (sPrev === null ? [] : entList
+          .map((e) => ({ e, prev: entYearSum(e, sPrev), cur: entYearSum(e, SY) }))
+          .filter((m) => m.prev > 0 || m.cur > 0)
+          .map((m) => ({ ...m, d: m.cur - m.prev }))
+          .sort((a, b) => Math.abs(b.d) - Math.abs(a.d))
+          .slice(0, 6));
+    const sTop5Share = sEnts.slice(0, 5).reduce((s, e) => s + e.total, 0) / S_GRAND;
     renderTrend();
     // authored ledes — every sentence computed from the data itself
     (function () {
@@ -1817,17 +1952,20 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const trendLede = declines >= 2
         ? `Giving peaked in <strong>${peakY}</strong> at <strong>${moneyCompact(byYear[peakY].sum)}</strong>, then declined for <strong>${declines} consecutive years</strong> to ${moneyCompact(byYear[LATEST].sum)} in ${LATEST}.`
         : `Giving peaked in <strong>${peakY}</strong> at <strong>${moneyCompact(byYear[peakY].sum)}</strong>; ${LATEST} disbursements were ${moneyCompact(byYear[LATEST].sum)}.`;
-      $('lede-trend').innerHTML = trendLede;
-      const top5 = entList.slice(0, 5).reduce((s, e) => s + e.total, 0);
-      $('lede-conc').innerHTML = `Five organizations received <strong>${money(top5)}</strong> — ${(top5 / GRAND * 100).toFixed(1)}¢ of every dollar granted across the five filed years.`;
-      $('lede-newret').innerHTML = `Giving concentrates among returning grantees: <strong>${returningIn[LATEST]} of ${newIn[LATEST] + returningIn[LATEST]}</strong> recipients in ${LATEST} had been funded before.`;
-      const cTop = catList.find((c) => c.key !== CAT_OTHER);
-      const cOther = catList.find((c) => c.key === CAT_OTHER) || { sum: 0, count: 0 };
+      $('lede-trend').innerHTML = trendLede + (SY !== null ? ` Viewing <strong>${SY}</strong> \u2014 every panel below is scoped to it.` : '');
+      const top5 = sEnts.slice(0, 5).reduce((s, e) => s + e.total, 0);
+      $('lede-conc').innerHTML = `Five organizations received <strong>${money(top5)}</strong> — ${(top5 / S_GRAND * 100).toFixed(1)}¢ of every dollar granted ${SY !== null ? 'in tax year ' + SY : 'across the five filed years'}.`;
+      const nrY = SY !== null ? SY : LATEST;
+      $('lede-newret').innerHTML = nrY === YEARS[0]
+        ? `<strong>${newIn[nrY]}</strong> recipients appear in ${nrY} — the first year in the filed record, so every organization counts as new.`
+        : `Giving concentrates among returning grantees: <strong>${returningIn[nrY]} of ${newIn[nrY] + returningIn[nrY]}</strong> recipients in ${nrY} had been funded before.`;
+      const cTop = sCatList.find((c) => c.key !== CAT_OTHER);
+      const cOther = sCatList.find((c) => c.key === CAT_OTHER) || { sum: 0, count: 0 };
       $('lede-cats').innerHTML = `<strong>${esc(cTop.key)}</strong> leads at <strong>${moneyCompact(cTop.sum)}</strong> across ${cTop.count} grants. Where the filing\u2019s words name no field, nothing is guessed \u2014 <strong>${moneyCompact(cOther.sum)}</strong> stays in ${esc(CAT_OTHER.toLowerCase())}.`;
-      const m0 = movers[0];
+      const m0 = sMovers[0];
       $('lede-movers').innerHTML = m0
-        ? `The largest single swing into ${LATEST}: <strong>${esc(dc(m0.e.display))}</strong>, ${m0.d >= 0 ? 'up' : 'down'} <strong>${moneyCompact(Math.abs(m0.d))}</strong> versus ${PREV}.`
-        : '';
+        ? `The largest single swing into ${SY !== null ? SY : LATEST}: <strong>${esc(dc(m0.e.display))}</strong>, ${m0.d >= 0 ? 'up' : 'down'} <strong>${moneyCompact(Math.abs(m0.d))}</strong> versus ${sPrev !== null ? sPrev : PREV}.`
+        : (SY !== null && sPrev === null ? `${SY} is the first filed year in TEOS — no prior year to compare.` : '');
       const db = document.getElementById('db-method');
       if (db && !db.dataset.wired) {
         db.dataset.wired = '1';
@@ -1835,16 +1973,16 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       }
     })();
     // concentration
-    $('conc-share').textContent = (top5Share * 100).toFixed(1) + '%';
-    $('conc-bar').style.width = (top5Share * 100).toFixed(1) + '%';
-    $('conc-hint').textContent = `5 organizations — the other ${entList.length - 5} share the remaining ${(100 - top5Share * 100).toFixed(1)}%`;
+    $('conc-share').textContent = (sTop5Share * 100).toFixed(1) + '%';
+    $('conc-bar').style.width = (sTop5Share * 100).toFixed(1) + '%';
+    $('conc-hint').textContent = `5 organizations — the other ${sEnts.length - 5} share the remaining ${(100 - sTop5Share * 100).toFixed(1)}%`;
     // the five behind the number — they arrive one by one
-    const top5list = entList.slice(0, 5);
+    const top5list = sEnts.slice(0, 5);
     const maxT5 = top5list[0].total;
     $('conc-top5').innerHTML = top5list.map((e, i) => barRow(
       `<span class="rk">${String(i + 1).padStart(2, '0')}</span> ${esc(dc(e.display))}`,
       e.total, maxT5,
-      { cls: 'is-btn stacked', attrs: `style="--i:${i}" data-ent="${esc(e.id)}" role="button" tabindex="0" aria-label="${esc(dc(e.display))}, ${money(e.total)}, ${(e.total / GRAND * 100).toFixed(1)} percent of all dollars. Opens the profile."`,
+      { cls: 'is-btn stacked', attrs: `style="--i:${i}" data-ent="${esc(e.id)}" role="button" tabindex="0" aria-label="${esc(dc(e.display))}, ${money(e.total)}, ${(e.total / S_GRAND * 100).toFixed(1)} percent of ${SY !== null ? SY + ' ' : 'all '}dollars. Opens the profile."`,
         val: `${money(e.total)}` }
     )).join('');
     $('conc-top5').querySelectorAll('.bar-row').forEach((r) => {
@@ -1855,20 +1993,20 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
 
     // the dollar diagram — cents by largest remainder so they sum to exactly 100
     (function () {
-      const raw = catList.map((c) => c.sum / GRAND * 100);
+      const raw = sCatList.map((c) => c.sum / S_GRAND * 100);
       const floors = raw.map(Math.floor);
       let left = 100 - floors.reduce((a, b) => a + b, 0);
       const order = raw.map((v, i) => [v - floors[i], i]).sort((a, b) => b[0] - a[0]);
       const cents = floors.slice();
       for (let k = 0; k < left; k++) cents[order[k % order.length][1]]++;
-      $('dollar-bar').innerHTML = catList.map((c, i) => {
+      $('dollar-bar').innerHTML = sCatList.map((c, i) => {
         const pct = raw[i];
         const inBarName = pct >= 12 ? c.key : c.key.split(' ')[0];
         return `<button type="button" class="dseg${pct < 7 ? ' is-small' : ''}" data-cat="${esc(c.key)}" style="flex:${pct} 0 0;background:${c.color};--di:${i}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}" aria-label="${esc(c.key)}: ${cents[i] === 0 ? 'under one cent' : cents[i] + ' cents'} of every dollar, ${money(c.sum)} across ${c.count} grants. Opens these grants in the ledger.">
           <span class="dseg-c"><span class="dc">${cents[i]}¢</span><span class="dn">${esc(inBarName)}</span></span>
         </button>`;
       }).join('');
-      $('cat-legend').innerHTML = catList.map((c, i) => `
+      $('cat-legend').innerHTML = sCatList.map((c, i) => `
         <button type="button" class="cl-row" data-cat="${esc(c.key)}" aria-label="Open ${esc(c.key)} grants in the ledger">
           <span class="cl-sw" style="background:${c.color}"></span>
           <span class="cl-cents">${cents[i] === 0 ? '<1¢' : cents[i] + '¢'}</span>
@@ -1889,8 +2027,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     // changes
     $('newret').innerHTML = YEARS.map((y, i) =>
       i === 0
-        ? `<button type="button" class="nr-cell" style="--ni:${i}" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} recipients</div><div class="nr-r">baseline year</div></button>`
-        : `<button type="button" class="nr-cell" style="--ni:${i}" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} new</div><div class="nr-r">${returningIn[y]} returning</div></button>`).join('');
+        ? `<button type="button" class="nr-cell${SY === y ? ' sel' : ''}" style="--ni:${i}" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} recipients</div><div class="nr-r">baseline year</div></button>`
+        : `<button type="button" class="nr-cell${SY === y ? ' sel' : ''}" style="--ni:${i}" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} new</div><div class="nr-r">${returningIn[y]} returning</div></button>`).join('');
     (function () {
       const panel = $('nr-detail');
       let openY = null;
@@ -1930,7 +2068,9 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
         });
       });
     })();
-    $('movers').innerHTML = movers.map((m) => `
+    $('movers').innerHTML = (sMovers.length === 0
+      ? `<li class="mover-none">No prior filed year to compare — ${SY} is the first in the record.</li>`
+      : '') + sMovers.map((m) => `
       <li class="mover" data-ent="${esc(m.e.id)}">
         <button type="button" class="mover-btn">
           <span class="mover-name">${esc(dc(m.e.display))}</span>
@@ -1941,6 +2081,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('movers').querySelectorAll('.mover').forEach((li) => {
       li.querySelector('button').addEventListener('click', () => openProfile(li.dataset.ent));
     });
+
   }
 
   // ---------- recipients ----------
@@ -1948,7 +2089,14 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   let recSort = 'total';
   let recExpanded = false;
   function renderRecipients() {
-    const top = entList.slice(0, 10);
+    const SY = state.y;
+    const S_GRAND = SY === null ? GRAND : byYear[SY].sum;
+    const sEnts = SY === null ? entList
+      : entList.map((e) => {
+          const t = entYearSum(e, SY);
+          return t > 0 ? { ...e, total: t, count: e.grants.filter((g) => g.y === SY).length } : null;
+        }).filter(Boolean).sort((a, b) => b.total - a.total);
+    const top = sEnts.slice(0, 10);
     const maxT = top[0].total;
     $('rec-bars').innerHTML = top.map((e, i) => barRow(
       `<span class="rk">${String(i + 1).padStart(2, '0')}</span> ${esc(dc(e.display))}${e.aliases.length > 1 ? ' <span class="merged-flag" title="Merged from ' + e.aliases.length + ' as-filed name variants — see Methodology">▸' + e.aliases.length + '</span>' : ''}`,
@@ -1962,15 +2110,15 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     });
 
     const q = recQ.trim().toLowerCase();
-    let list = q ? entList.filter((e) => e.display.toLowerCase().includes(q) || e.aliases.some((a) => a.toLowerCase().includes(q))) : entList.slice();
-    $('rec-count').textContent = `${list.length.toLocaleString('en-US')} of ${entList.length} recipients · ${money(list.reduce((s,e)=>s+e.total,0))}`;
+    let list = q ? sEnts.filter((e) => e.display.toLowerCase().includes(q) || e.aliases.some((a) => a.toLowerCase().includes(q))) : sEnts.slice();
+    $('rec-count').textContent = `${list.length.toLocaleString('en-US')} of ${sEnts.length} recipients${SY !== null ? ' in ' + SY : ''} · ${money(list.reduce((s,e)=>s+e.total,0))}`;
     $('rec-empty').hidden = list.length > 0;
 
     const item = (e) => `
       <li>
         <button type="button" class="rec-item" data-ent="${esc(e.id)}">
           <span class="ri-name" title="As filed: ${esc(e.aliases.join(' · '))}">${esc(dc(e.display))}${e.aliases.length > 1 ? ' <span class="merged-flag">▸' + e.aliases.length + '</span>' : ''}</span>
-          <span class="ri-meta">${e.count} ${grantsWord(e.count)} · ${[...e.years].sort().join(', ')} · <span class="ri-share">${(e.total / GRAND * 100).toFixed(e.total / GRAND >= 0.01 ? 1 : 2)}% of all dollars</span></span>
+          <span class="ri-meta">${e.count} ${grantsWord(e.count)} · ${[...e.years].sort().join(', ')} · <span class="ri-share">${(e.total / S_GRAND * 100).toFixed(e.total / S_GRAND >= 0.01 ? 1 : 2)}% of ${SY !== null ? SY : 'all'} dollars</span></span>
           <span class="ri-amt">${money(e.total)}</span>
         </button>
       </li>`;
@@ -2313,7 +2461,39 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   }
 
   // ---------- render ----------
+  // the headline strip sits above every tab, so it follows the scope on every render
+  function renderKpis() {
+    const SY = state.y;
+    const orgsEl = $('kpi-orgs');
+    const orgsVal = SY === null ? entList.length : entList.filter((e) => e.years.has(SY)).length;
+    if (!orgsEl.dataset.live && SY === null) { orgsEl.dataset.live = '1'; animateCount(orgsEl, orgsVal, { duration: 1000 }); }
+    else { orgsEl.dataset.live = '1'; orgsEl.textContent = orgsVal; }
+    $('kpi-orgs').parentElement.querySelector('.k-hint').textContent =
+      SY === null ? 'Organizations the foundation funded · 296 as-filed names' : `Organizations funded in ${SY}`;
+    const amts = (SY === null ? grants : grants.filter((g) => g.y === SY)).map((g) => g.a).sort((a, b) => a - b);
+    const md = amts.length % 2 ? amts[(amts.length - 1) / 2] : (amts[amts.length / 2 - 1] + amts[amts.length / 2]) / 2;
+    $('kpi-median').textContent = money(md);
+    $('kpi-median').parentElement.querySelector('.k-hint').textContent =
+      SY === null ? 'Across all 857 grants' : `Across ${byYear[SY].count} grants in ${SY}`;
+    const dEl = $('kpi-delta');
+    dEl.classList.remove('up', 'down');
+    const dy = SY !== null ? SY : LATEST;
+    const dp = dy > YEARS[0] ? dy - 1 : null;
+    dEl.parentElement.querySelector('.k-label').textContent = SY === null ? 'Latest year' : 'Year change';
+    if (dp === null) {
+      dEl.textContent = '—';
+      $('kpi-delta-hint').textContent = `${dy} is the first filed year in the record`;
+    } else {
+      const pct = (byYear[dy].sum - byYear[dp].sum) / byYear[dp].sum * 100;
+      dEl.textContent = (pct > 0 ? '+' : '\u2212') + Math.abs(pct).toFixed(1) + '%';
+      dEl.classList.add(pct >= 0 ? 'up' : 'down');
+      $('kpi-delta-hint').textContent = `${dy} vs ${dp} disbursements`;
+    }
+  }
+
   function render() {
+    if (typeof syncSide === 'function') syncSide();
+    renderKpis();
     if (state.tab === 'overview') renderOverview();
     else if (state.tab === 'recipients') renderRecipients();
     else if (state.tab === 'grants') renderGrants();
