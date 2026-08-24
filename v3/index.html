@@ -265,7 +265,87 @@ h1 {
 .grid2 { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
 @media (min-width: 1000px) { .grid2 { grid-template-columns: 1fr 1fr; } }
 
-/* editorial grammar */
+/* editorial grammar — v9 scale */
+.sec-head {
+  display: flex; align-items: baseline; gap: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+.sec-head .snum {
+  font-family: var(--serif); font-weight: 600;
+  font-size: 1.9rem; line-height: 1;
+  color: var(--copper);
+}
+.sec-head h2 {
+  font-family: var(--serif); font-weight: 600;
+  font-size: clamp(1.3rem, 2.2vw, 1.65rem);
+  letter-spacing: -0.015em; margin: 0;
+}
+.sec-head .sec-rule { flex: 1; height: 1px; background: var(--rule-strong); transform: translateY(-4px); }
+.sec-head .sub { font-size: 0.8rem; color: var(--ink-dim); white-space: nowrap; }
+@media (max-width: 719px) { .sec-head .sub { display: none; } }
+
+/* the dollar diagram */
+.dollar-bar {
+  display: flex; width: 100%;
+  height: 64px; border-radius: var(--r-s);
+  overflow: hidden; margin: 1.1rem 0 0.5rem;
+  box-shadow: inset 0 0 0 1px rgba(32,36,30,0.12);
+}
+.dseg { position: relative; min-width: 0.75%; }
+.dseg .dseg-c {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  padding: 0 0.7rem; overflow: hidden;
+}
+.dseg .dc { font-family: var(--serif); font-weight: 600; font-size: 1.15rem; color: #fff; line-height: 1; }
+.dseg .dn { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.85); white-space: nowrap; }
+.dseg.is-small .dseg-c { display: none; }
+.cat-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 0.15rem 2rem; margin-top: 0.9rem; }
+.cl-row {
+  display: grid; grid-template-columns: 14px minmax(0,1fr) auto; gap: 0.6rem;
+  align-items: baseline; padding: 0.42rem 0.2rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.85rem;
+}
+.cl-sw { width: 14px; height: 14px; border-radius: 4px; transform: translateY(2px); }
+.cl-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-name .cl-n { color: var(--ink-faint); font-size: 0.75rem; }
+.cl-val { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--copper-deep); white-space: nowrap; }
+
+/* concentration pair */
+.conc-pair { display: flex; height: 18px; border-radius: 9px; overflow: hidden; margin: 0.85rem 0 0.45rem; box-shadow: inset 0 0 0 1px rgba(32,36,30,0.12); }
+.conc-pair .p5 { background: linear-gradient(90deg, var(--copper), var(--copper-deep)); }
+.conc-pair .prest { background: var(--tint); }
+
+/* premium selects */
+.ledger-tools select, .rec-sort { }
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%234e5347' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.1rem !important;
+}
+
+/* recipients bars: rank emphasis */
+#rec-bars .bar-row:first-child .bar-fill { background: linear-gradient(90deg, var(--copper-deep), #6e3a0e); }
+#rec-bars .bar-row:first-child .bar-label { font-weight: 600; }
+.bar-track { height: 14px; border-radius: 7px; }
+.bar-fill { border-radius: 7px; }
+
+/* mini seal for methodology */
+.mini-seal {
+  display: inline-block;
+  font-family: var(--sans); font-weight: 700; font-size: 0.6rem; letter-spacing: 0.07em;
+  color: var(--pass);
+  border: 1.5px solid var(--pass-border); border-radius: 999px;
+  padding: 0.14rem 0.5rem;
+  transform: rotate(-3deg);
+}
+
+/* book tabs */
+.tab[aria-selected="true"] { background: linear-gradient(180deg, rgba(163,92,26,0.06), transparent); border-radius: 8px 8px 0 0; }
+
 .pnum {
   font-family: var(--serif); font-weight: 600; font-size: 0.88rem;
   color: var(--copper-deep);
@@ -428,6 +508,7 @@ h1 {
 .nr-n { font-size: 0.78rem; color: var(--pass); font-weight: 600; }
 .nr-r { font-size: 0.78rem; color: var(--ink-dim); }
 #movers { list-style: none; margin: 0.2rem 0 0; padding: 0; }
+@media (min-width: 1000px) { #movers { display: grid; grid-template-columns: 1fr 1fr; gap: 0 2.2rem; } }
 .mover-btn {
   appearance: none; background: none; border: 0; cursor: pointer; width: 100%;
   display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0.1rem 0.9rem;
@@ -763,28 +844,36 @@ h1 {
   <main id="main">
 
     <section id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
+      <div class="card rv">
+        <div class="sec-head">
+          <span class="snum" aria-hidden="true">I</span>
+          <h2>Disbursements by tax year</h2>
+          <span class="sec-rule" aria-hidden="true"></span>
+          <span class="sub">Select a year to open it in the ledger</span>
+        </div>
+        <p class="card-lede" id="lede-trend">—</p>
+        <div id="trend"><div class="tr-tip" id="tr-tip" role="tooltip"></div></div>
+      </div>
+
       <div class="grid2">
         <div class="card rv">
-          <div class="card-head">
-            <h2><span class="pnum" aria-hidden="true">I</span>Disbursements by tax year</h2>
-            <span class="sub">Select a year to open it in the ledger</span>
-          </div>
-          <p class="card-lede" id="lede-trend">—</p>
-          <div id="trend"><div class="tr-tip" id="tr-tip" role="tooltip"></div></div>
-        </div>
-        <div class="card rv">
-          <div class="card-head">
-            <h2><span class="pnum" aria-hidden="true">II</span>Concentration</h2>
-            <span class="sub">Share held by the top five recipients</span>
+          <div class="sec-head">
+            <span class="snum" aria-hidden="true">II</span>
+            <h2>Concentration</h2>
+            <span class="sec-rule" aria-hidden="true"></span>
           </div>
           <p class="card-lede" id="lede-conc">—</p>
           <div id="conc-share">—</div>
-          <div class="conc-wrap"><div class="conc-track"><div id="conc-bar" style="width:0%"></div></div></div>
+          <div class="conc-pair" aria-hidden="true"><div class="p5" id="conc-bar" style="width:0%"></div><div class="prest" style="flex:1"></div></div>
           <div id="conc-hint">—</div>
-          <div class="card-head" style="margin-top:1.35rem">
+        </div>
+        <div class="card rv">
+          <div class="sec-head">
+            <span class="snum" aria-hidden="true">III</span>
             <h2>New vs returning</h2>
-            <span class="sub">Canonical recipients per year</span>
+            <span class="sec-rule" aria-hidden="true"></span>
           </div>
+          <p class="card-lede" id="lede-newret">—</p>
           <div class="newret" id="newret"></div>
         </div>
       </div>
@@ -801,23 +890,27 @@ h1 {
         <div class="db-sub">Halt-on-fail: a year that does not tie is withheld, never estimated · the checks re-run in your browser console on every load · <a href="#tab=methodology" id="db-method">read the method</a></div>
       </div>
 
-      <div class="grid2">
-        <div class="card rv">
-          <div class="card-head">
-            <h2><span class="pnum" aria-hidden="true">III</span>Where the dollars go</h2>
-            <span class="sub">Keyword-derived categories — method in Methodology</span>
-          </div>
-          <p class="card-lede" id="lede-cats">—</p>
-          <div id="cats"></div>
+      <div class="card rv">
+        <div class="sec-head">
+          <span class="snum" aria-hidden="true">IV</span>
+          <h2>Where a granted dollar goes</h2>
+          <span class="sec-rule" aria-hidden="true"></span>
+          <span class="sub">Keyword-derived categories — method in Methodology</span>
         </div>
-        <div class="card rv">
-          <div class="card-head">
-            <h2><span class="pnum" aria-hidden="true">IV</span>Biggest changes · 2024</h2>
-            <span class="sub">Largest swings vs 2023</span>
-          </div>
-          <p class="card-lede" id="lede-movers">—</p>
-          <ul id="movers"></ul>
+        <p class="card-lede" id="lede-cats">—</p>
+        <div class="dollar-bar" id="dollar-bar" role="img" aria-label="One granted dollar, split by category."></div>
+        <div class="cat-legend" id="cat-legend"></div>
+      </div>
+
+      <div class="card rv">
+        <div class="sec-head">
+          <span class="snum" aria-hidden="true">V</span>
+          <h2>Biggest changes · 2024</h2>
+          <span class="sec-rule" aria-hidden="true"></span>
+          <span class="sub">Largest swings vs 2023</span>
         </div>
+        <p class="card-lede" id="lede-movers">—</p>
+        <ul id="movers"></ul>
       </div>
     </section>
 
@@ -1392,6 +1485,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       $('lede-trend').innerHTML = trendLede;
       const top5 = entList.slice(0, 5).reduce((s, e) => s + e.total, 0);
       $('lede-conc').innerHTML = `Five organizations received <strong>${money(top5)}</strong> — ${(top5 / GRAND * 100).toFixed(1)}¢ of every dollar granted across the five filed years.`;
+      $('lede-newret').innerHTML = `Giving concentrates among returning grantees: <strong>${returningIn[LATEST]} of ${newIn[LATEST] + returningIn[LATEST]}</strong> recipients in ${LATEST} had been funded before.`;
       const c0 = catList[0], c1 = catList.find((c) => c.key !== 'Programs & other') || catList[1];
       $('lede-cats').innerHTML = `<strong>${esc(c1.key)}</strong> is the largest named category at <strong>${moneyCompact(c1.sum)}</strong> across ${c1.count} grants; ${esc(c0.key.toLowerCase())} accounts for ${moneyCompact(c0.sum)}.`;
       const m0 = movers[0];
@@ -1407,11 +1501,29 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     // concentration
     $('conc-share').textContent = (top5Share * 100).toFixed(1) + '%';
     $('conc-bar').style.width = (top5Share * 100).toFixed(1) + '%';
-    $('conc-hint').textContent = `Top 5 of ${entList.length} recipients hold ${(top5Share*100).toFixed(1)}% of all dollars`;
-    // categories
-    const maxCat = catList[0].sum;
-    $('cats').innerHTML = catList.map((c) =>
-      barRow(esc(c.key), c.sum, maxCat, { val: `${moneyCompact(c.sum)} · ${c.count}` })).join('');
+    $('conc-hint').textContent = `5 organizations — the other ${entList.length - 5} share the remaining ${(100 - top5Share * 100).toFixed(1)}%`;
+    // the dollar diagram — cents by largest remainder so they sum to exactly 100
+    (function () {
+      const shades = ['#8a4a12', '#a35c1a', '#bf7228', '#d18a3f', '#ddA05a', '#e8b87e', '#c9c2ae'];
+      const raw = catList.map((c) => c.sum / GRAND * 100);
+      const floors = raw.map(Math.floor);
+      let left = 100 - floors.reduce((a, b) => a + b, 0);
+      const order = raw.map((v, i) => [v - floors[i], i]).sort((a, b) => b[0] - a[0]);
+      const cents = floors.slice();
+      for (let k = 0; k < left; k++) cents[order[k % order.length][1]]++;
+      $('dollar-bar').innerHTML = catList.map((c, i) => {
+        const pct = raw[i];
+        return `<div class="dseg${pct < 9 ? ' is-small' : ''}" style="flex:${pct} 0 0;background:${shades[i % shades.length]}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}">
+          <div class="dseg-c"><span class="dc">${cents[i]}¢</span><span class="dn">${esc(c.key)}</span></div>
+        </div>`;
+      }).join('');
+      $('cat-legend').innerHTML = catList.map((c, i) => `
+        <div class="cl-row">
+          <span class="cl-sw" style="background:${shades[i % shades.length]}"></span>
+          <span class="cl-name">${esc(c.key)} <span class="cl-n">· ${c.count} ${grantsWord(c.count)}</span></span>
+          <span class="cl-val">${cents[i] === 0 ? '<1¢' : cents[i] + '¢'} · ${moneyCompact(c.sum)}</span>
+        </div>`).join('');
+    })();
     // changes
     $('newret').innerHTML = YEARS.map((y, i) =>
       i === 0
@@ -1759,7 +1871,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const t = tieout[String(y)];
       return `
         <div class="tie-card">
-          <div class="tc-top"><span class="tc-y">${y}</span><span class="badge-pass">✓ PASS</span></div>
+          <div class="tc-top"><span class="tc-y">${y}</span><span class="mini-seal">Δ $0 ✓</span></div>
           <div class="tc-row"><span>Grant schedule sum</span><strong>${money(t.grant_sum)}</strong></div>
           <div class="tc-row"><span>Part I line 25 (d)</span><strong>${money(t.line25_col_d)}</strong></div>
           <div class="tc-row"><span>Grant rows</span><strong>${t.grant_count}</strong></div>
