@@ -284,6 +284,8 @@ h1 {
 .sec-head .sub { font-size: 0.8rem; color: var(--ink-dim); white-space: nowrap; }
 @media (max-width: 719px) { .sec-head .sub { display: none; } }
 
+/* the cover wave field */
+.wave { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 /* the dollar diagram */
 .dollar-bar {
   display: flex; width: 100%;
@@ -291,7 +293,9 @@ h1 {
   overflow: hidden; margin: 1.1rem 0 0.5rem;
   box-shadow: inset 0 0 0 1px rgba(32,36,30,0.12);
 }
-.dseg { position: relative; min-width: 0.75%; }
+.dseg { position: relative; min-width: 0.75%; appearance: none; border: 0; padding: 0; cursor: pointer; background: none; }
+.dseg::after { content: ""; position: absolute; inset: 0; background: rgba(255,255,255,0); transition: background var(--dur); }
+.dseg:hover::after, .dseg:focus-visible::after { background: rgba(255,255,255,0.12); }
 .dseg .dseg-c {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
@@ -302,11 +306,14 @@ h1 {
 .dseg.is-small .dseg-c { display: none; }
 .cat-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 0.15rem 2rem; margin-top: 0.9rem; }
 .cl-row {
+  appearance: none; border: 0; background: none; width: 100%; cursor: pointer; text-align: left;
   display: grid; grid-template-columns: 14px minmax(0,1fr) auto; gap: 0.6rem;
   align-items: baseline; padding: 0.42rem 0.2rem;
   border-bottom: 1px solid var(--rule);
   font-size: 0.85rem;
+  transition: background var(--dur);
 }
+.cl-row:hover, .cl-row:focus-visible { background: var(--tint); }
 .cl-sw { width: 14px; height: 14px; border-radius: 4px; transform: translateY(2px); }
 .cl-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cl-name .cl-n { color: var(--ink-faint); font-size: 0.75rem; }
@@ -780,6 +787,7 @@ select {
 </noscript>
 
 <header class="cover">
+  <canvas class="wave" id="wave" aria-hidden="true"></canvas>
   <div class="wrap">
     <div class="topbar">
       <span class="mark">Grants Ledger<span class="tm">.</span></span>
@@ -1261,7 +1269,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     .slice(0, 6);
 
   // ---------- state (all of it lives in the URL) ----------
-  const state = { tab: 'overview', y: null, r: null, q: '', min: 0, sort: 'amount-desc', page: 0 };
+  const state = { tab: 'overview', y: null, r: null, c: null, q: '', min: 0, sort: 'amount-desc', page: 0 };
   let profileId = null; // open recipient profile
 
   function readHash() {
@@ -1276,6 +1284,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       : p.recipient && aliasToId.has(p.recipient) ? aliasToId.get(p.recipient) : null;
     state.q = p.q || '';
     state.min = [0,50000,250000,1000000].includes(+p.min) ? +p.min : 0;
+    const catKeys = CATS.map((c) => c.key).concat(['Programs & other']);
+    state.c = p.cat && catKeys.includes(p.cat) ? p.cat : null;
     state.sort = /^(amount|year|recipient|purpose)-(asc|desc)$/.test(p.sort || '') ? p.sort : 'amount-desc';
     state.page = Math.max(0, (+p.page || 1) - 1);
   }
@@ -1285,6 +1295,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     if (state.r !== null) parts.push('recipient=' + encodeURIComponent(state.r));
     if (state.q) parts.push('q=' + encodeURIComponent(state.q));
     if (state.min) parts.push('min=' + state.min);
+    if (state.c !== null) parts.push('cat=' + encodeURIComponent(state.c));
     if (state.sort !== 'amount-desc') parts.push('sort=' + state.sort);
     if (state.page) parts.push('page=' + (state.page + 1));
     const hash = '#' + parts.join('&');
@@ -1306,6 +1317,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   };
   function viewRows() {
     let rows = scopeRows();
+    if (state.c !== null) rows = rows.filter((g) => catOf(g) === state.c);
     if (state.min > 0) rows = rows.filter((g) => g.a >= state.min);
     const q = state.q.trim().toLowerCase();
     if (q) {
@@ -1513,16 +1525,23 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       for (let k = 0; k < left; k++) cents[order[k % order.length][1]]++;
       $('dollar-bar').innerHTML = catList.map((c, i) => {
         const pct = raw[i];
-        return `<div class="dseg${pct < 9 ? ' is-small' : ''}" style="flex:${pct} 0 0;background:${shades[i % shades.length]}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}">
-          <div class="dseg-c"><span class="dc">${cents[i]}¢</span><span class="dn">${esc(c.key)}</span></div>
-        </div>`;
+        return `<button type="button" class="dseg${pct < 9 ? ' is-small' : ''}" data-cat="${esc(c.key)}" style="flex:${pct} 0 0;background:${shades[i % shades.length]}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}" aria-label="${esc(c.key)}: ${cents[i] === 0 ? 'under one cent' : cents[i] + ' cents'} of every dollar, ${money(c.sum)} across ${c.count} grants. Opens these grants in the ledger.">
+          <span class="dseg-c"><span class="dc">${cents[i]}¢</span><span class="dn">${esc(c.key)}</span></span>
+        </button>`;
       }).join('');
       $('cat-legend').innerHTML = catList.map((c, i) => `
-        <div class="cl-row">
+        <button type="button" class="cl-row" data-cat="${esc(c.key)}" aria-label="Open ${esc(c.key)} grants in the ledger">
           <span class="cl-sw" style="background:${shades[i % shades.length]}"></span>
           <span class="cl-name">${esc(c.key)} <span class="cl-n">· ${c.count} ${grantsWord(c.count)}</span></span>
           <span class="cl-val">${cents[i] === 0 ? '<1¢' : cents[i] + '¢'} · ${moneyCompact(c.sum)}</span>
-        </div>`).join('');
+        </button>`).join('');
+      document.querySelectorAll('#dollar-bar .dseg, #cat-legend .cl-row').forEach((el) => {
+        el.addEventListener('click', () => {
+          state.c = state.c === el.dataset.cat ? null : el.dataset.cat;
+          state.page = 0;
+          setTab('grants');
+        });
+      });
     })();
     // changes
     $('newret').innerHTML = YEARS.map((y, i) =>
@@ -1685,8 +1704,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (profileId !== null) { closeProfile(); return; }
-      if (state.tab === 'grants' && (state.y !== null || state.r !== null || state.q || state.min)) {
-        state.y = null; state.r = null; state.q = ''; state.min = 0; state.page = 0;
+      if (state.tab === 'grants' && (state.y !== null || state.r !== null || state.c !== null || state.q || state.min)) {
+        state.y = null; state.r = null; state.c = null; state.q = ''; state.min = 0; state.page = 0;
         syncControls(); writeHash(true); render();
       }
     }
@@ -1704,14 +1723,19 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const e = entities.get(state.r);
       html += `<button type="button" class="scope-chip" data-clear="r">${esc(dc(e.display))} <span class="chip-x" aria-hidden="true">✕</span><span class="sr-only">, remove recipient filter</span></button>`;
     }
+    if (state.c !== null) {
+      html += `<button type="button" class="scope-chip" data-clear="c">${esc(state.c)} <span class="chip-x" aria-hidden="true">✕</span><span class="sr-only">, remove category filter</span></button>`;
+    }
     host.innerHTML = html;
     host.querySelectorAll('[data-clear]').forEach((b) => {
       b.addEventListener('click', () => {
-        if (b.dataset.clear === 'y') state.y = null; else state.r = null;
+        if (b.dataset.clear === 'y') state.y = null;
+        else if (b.dataset.clear === 'r') state.r = null;
+        else state.c = null;
         state.page = 0; syncControls(); writeHash(true); render();
       });
     });
-    $('clear-all').hidden = !(state.y !== null || state.r !== null || state.q || state.min);
+    $('clear-all').hidden = !(state.y !== null || state.r !== null || state.c !== null || state.q || state.min);
   }
 
   function renderGrants() {
@@ -1726,6 +1750,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     const parts = [];
     if (state.r !== null) parts.push(dc(entities.get(state.r).display));
     if (state.y !== null) parts.push('Tax year ' + state.y);
+    if (state.c !== null) parts.push(state.c);
     $('view-line').textContent =
       `${parts.length ? parts.join(' · ') + ' · ' : ''}${rows.length.toLocaleString('en-US')} ${grantsWord(rows.length)} · ${money(sum)} in view`;
 
@@ -1806,7 +1831,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     });
   });
   $('clear-all').addEventListener('click', () => {
-    state.y = null; state.r = null; state.q = ''; state.min = 0; state.page = 0;
+    state.y = null; state.r = null; state.c = null; state.q = ''; state.min = 0; state.page = 0;
     syncControls(); writeHash(true); render();
   });
   function gotoPage(p) {
@@ -1969,6 +1994,43 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     }, { threshold: 0.45 });
     eqIO.observe(eq);
   }
+
+  // the cover wave field — ambient brand texture on the cloth, never on data
+  (function () {
+    const cv = document.getElementById('wave');
+    const cover = document.querySelector('.cover');
+    if (!cv || !cover || reducedMotion()) return;
+    const ctx2 = cv.getContext('2d');
+    let W = 0, H = 0, t = 0, running = true;
+    function size() {
+      W = cv.width = cover.clientWidth;
+      H = cv.height = cover.clientHeight;
+    }
+    size();
+    window.addEventListener('resize', () => setTimeout(size, 120));
+    document.addEventListener('visibilitychange', () => { running = !document.hidden; if (running) requestAnimationFrame(draw); });
+    function draw() {
+      if (!running) return;
+      t += 0.0035;
+      ctx2.clearRect(0, 0, W, H);
+      for (let k = 0; k < 3; k++) {
+        ctx2.beginPath();
+        const base = H * (0.35 + k * 0.18);
+        const amp = 14 + k * 9;
+        for (let x = 0; x <= W; x += 6) {
+          const y = base
+            + Math.sin(x / (170 + k * 55) + t * (1 + k * 0.35)) * amp
+            + Math.sin(x / (61 + k * 23) - t * 0.7) * (amp * 0.35);
+          if (x === 0) ctx2.moveTo(x, y); else ctx2.lineTo(x, y);
+        }
+        ctx2.strokeStyle = 'rgba(242,239,228,' + (0.05 - k * 0.01) + ')';
+        ctx2.lineWidth = 1.4;
+        ctx2.stroke();
+      }
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  })();
 
   // init
   readHash();
