@@ -303,6 +303,40 @@ h1 {
 .doctrine-band .db-sub a { color: var(--cream); }
 .doctrine-band .db-sub code { font-family: var(--mono); font-size: 0.74rem; color: var(--cream-dim); }
 
+/* the equation that performs itself */
+.db-eq {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 0.65rem 1.4rem;
+  margin: 1.1rem 0 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.eq-part { display: flex; flex-direction: column; gap: 0.15rem; }
+.eq-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--cream-faint); }
+.eq-val { font-family: var(--serif); font-weight: 600; font-size: clamp(1.35rem, 2.6vw, 1.9rem); color: var(--cream); letter-spacing: -0.02em; }
+.eq-op { font-family: var(--serif); font-size: clamp(1.3rem, 2.4vw, 1.7rem); color: var(--copper-bright); align-self: center; }
+.eq-seal {
+  align-self: center;
+  font-family: var(--sans); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.08em;
+  color: #7fc79e;
+  border: 2px solid rgba(127,199,158,0.55);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  transform: rotate(-4deg);
+}
+.db-eq.armed .eq-seal { opacity: 0; transform: rotate(-4deg) scale(1.7); }
+.db-eq.stamped .eq-seal {
+  opacity: 1; transform: rotate(-4deg) scale(1);
+  transition: opacity 240ms var(--ease), transform 340ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+/* entrance choreography */
+.rv { opacity: 0; transform: translateY(14px); transition: opacity 0.55s var(--ease), transform 0.55s var(--ease); }
+.rv.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; } }
+/* the sweep: hover one bar, the rest step back */
+#cats:hover .bar-row:not(:hover),
+#rec-bars:hover .bar-row:not(:hover) { opacity: 0.55; }
+#cats .bar-row, #rec-bars .bar-row { transition: opacity var(--dur) var(--ease), background var(--dur); }
+
 /* trend */
 #trend { position: relative; }
 #trend svg { width: 100%; height: auto; display: block; }
@@ -706,7 +740,7 @@ h1 {
 
     <section id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
       <div class="grid2">
-        <div class="card">
+        <div class="card rv">
           <div class="card-head">
             <h2><span class="pnum" aria-hidden="true">I</span>Disbursements by tax year</h2>
             <span class="sub">Select a year to open it in the ledger</span>
@@ -714,7 +748,7 @@ h1 {
           <p class="card-lede" id="lede-trend">—</p>
           <div id="trend"><div class="tr-tip" id="tr-tip" role="tooltip"></div></div>
         </div>
-        <div class="card">
+        <div class="card rv">
           <div class="card-head">
             <h2><span class="pnum" aria-hidden="true">II</span>Concentration</h2>
             <span class="sub">Share held by the top five recipients</span>
@@ -731,14 +765,20 @@ h1 {
         </div>
       </div>
 
-      <div class="doctrine-band" role="note">
+      <div class="doctrine-band rv" role="note">
         <div class="db-line">Every number on this page reconciles to the foundation’s own filed totals — <em>to the dollar, five years running.</em></div>
+        <div class="db-eq" id="db-eq" role="img" aria-label="Sum of the grant schedules, $64,172,055, equals Part I line 25(d), $64,172,055 — a difference of zero dollars, verified.">
+          <span class="eq-part"><span class="eq-label">Σ grant schedules</span><span class="eq-val" id="eq-a">$64,172,055</span></span>
+          <span class="eq-op">=</span>
+          <span class="eq-part"><span class="eq-label">Part I · line 25(d)</span><span class="eq-val" id="eq-b">$64,172,055</span></span>
+          <span class="eq-seal" aria-hidden="true">Δ $0 ✓</span>
+        </div>
         <div class="db-rule" aria-hidden="true"></div>
         <div class="db-sub">Halt-on-fail: a year that does not tie is withheld, never estimated · the checks re-run in your browser console on every load · <a href="#tab=methodology" id="db-method">read the method</a></div>
       </div>
 
       <div class="grid2">
-        <div class="card">
+        <div class="card rv">
           <div class="card-head">
             <h2><span class="pnum" aria-hidden="true">III</span>Where the dollars go</h2>
             <span class="sub">Keyword-derived categories — method in Methodology</span>
@@ -746,7 +786,7 @@ h1 {
           <p class="card-lede" id="lede-cats">—</p>
           <div id="cats"></div>
         </div>
-        <div class="card">
+        <div class="card rv">
           <div class="card-head">
             <h2><span class="pnum" aria-hidden="true">IV</span>Biggest changes · 2024</h2>
             <span class="sub">Largest swings vs 2023</span>
@@ -1741,6 +1781,37 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   }
   setToolsH();
   window.addEventListener('resize', () => setTimeout(setToolsH, 120));
+
+  // entrance choreography — staggered within a viewport batch
+  const rvIO = new IntersectionObserver((entries) => {
+    let order = 0;
+    entries.forEach((en) => {
+      if (en.isIntersecting) {
+        const el = en.target;
+        el.style.transitionDelay = reducedMotion() ? '0ms' : (order++ * 70) + 'ms';
+        el.classList.add('in');
+        rvIO.unobserve(el);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.rv').forEach((el) => rvIO.observe(el));
+
+  // the tie-out performs itself, once, when the band comes into view
+  const eq = document.getElementById('db-eq');
+  if (eq && !reducedMotion()) {
+    eq.classList.add('armed');
+    const eqIO = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        eqIO.unobserve(eq);
+        const D = 1250;
+        animateCount(document.getElementById('eq-a'), GRAND, { prefix: '$', duration: D });
+        animateCount(document.getElementById('eq-b'), GRAND, { prefix: '$', duration: D });
+        setTimeout(() => { eq.classList.remove('armed'); eq.classList.add('stamped'); }, D + 80);
+      });
+    }, { threshold: 0.45 });
+    eqIO.observe(eq);
+  }
 
   // init
   readHash();
