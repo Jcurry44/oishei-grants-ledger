@@ -398,9 +398,10 @@ h1 {
 
 /* the dollar assembles left to right when seen */
 @media (prefers-reduced-motion: no-preference) {
-  .dollar-bar .dseg { transform: scaleX(0); transform-origin: left; transition: transform 0.5s var(--ease); transition-delay: calc(var(--di) * 90ms); }
-  .dollar-bar.assembled .dseg { transform: scaleX(1); }
+  .card.rv:not(.in) .penny { opacity: 0; }
+  .card.in .penny { animation: pennyIn 0.32s var(--ease) backwards; animation-delay: calc(var(--pi) * 7ms + 120ms); }
 }
+@keyframes pennyIn { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: none; } }
 
 /* the footer carries the same quiet field */
 .foot { position: relative; overflow: hidden; }
@@ -409,40 +410,27 @@ h1 {
 
 /* the cover wave field */
 .wave { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-/* the dollar diagram */
-.dollar-bar {
-  display: flex; width: 100%;
-  height: 64px; border-radius: var(--r-s);
-  overflow: hidden; margin: 1.1rem 0 0.5rem;
-  box-shadow: inset 0 0 0 1px rgba(32,36,30,0.12);
-}
-.dseg { position: relative; min-width: 0.75%; appearance: none; border: 0; padding: 0; cursor: pointer; background: none; }
-.dseg::after { content: ""; position: absolute; inset: 0; background: rgba(255,255,255,0); transition: background var(--dur); }
-.dseg:hover::after, .dseg:focus-visible::after { background: rgba(255,255,255,0.12); }
-.dseg .dseg-c {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
-  padding: 0 0.7rem; overflow: hidden;
-}
-.dseg .dc { font-family: var(--serif); font-weight: 600; font-size: 1.15rem; color: #fff; line-height: 1; }
-.dseg .dn { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.85); white-space: nowrap; }
-.dseg.is-small .dseg-c { display: none; }
-.cat-legend { display: grid; grid-template-columns: 1fr; gap: 0.1rem; margin-top: 0.9rem; }
-@media (min-width: 1100px) { .cat-legend { grid-template-columns: 1fr 1fr; gap: 0.1rem 2.4rem; } }
-.cl-row {
-  appearance: none; border: 0; background: none; width: 100%; cursor: pointer; text-align: left;
-  display: grid; grid-template-columns: 14px 2.6rem minmax(0,1fr) auto; gap: 0.65rem;
-  align-items: baseline; padding: 0.45rem 0.2rem;
-  border-bottom: 1px solid var(--rule);
-  font-size: 0.86rem;
+/* the granted dollar, counted out penny by penny */
+.dollar-viz { display: grid; grid-template-columns: minmax(230px, 296px) 1fr; gap: 1.4rem 2.4rem; align-items: start; margin-top: 1.1rem; }
+@media (max-width: 899px) { .dollar-viz { grid-template-columns: 1fr; } .penny-grid { max-width: 330px; } }
+.penny-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.penny { aspect-ratio: 1; border-radius: 4px; background: var(--pc); transition: opacity var(--dur), transform var(--dur); }
+.penny-grid.dim .penny:not(.hot) { opacity: 0.22; }
+.penny-grid.dim .penny.hot { transform: scale(1.1); }
+.cat-rows { display: flex; flex-direction: column; }
+.cat-row {
+  appearance: none; background: none; border: 0; font: inherit; cursor: pointer;
+  display: flex; align-items: baseline; gap: 0.6rem; text-align: left;
+  padding: 0.46rem 0.45rem; border-bottom: 1px solid var(--rule); border-radius: 6px;
   transition: background var(--dur);
 }
-.cl-cents { font-family: var(--serif); font-weight: 600; color: var(--copper-deep); font-variant-numeric: tabular-nums; }
-.cl-row:hover, .cl-row:focus-visible { background: var(--tint); }
-.cl-sw { width: 14px; height: 14px; border-radius: 4px; transform: translateY(2px); }
-.cl-name { font-weight: 500; white-space: normal; }
-.cl-name .cl-n { color: var(--ink-faint); font-size: 0.75rem; }
-.cl-val { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--copper-deep); white-space: nowrap; }
+.cat-row:hover, .cat-row.hot { background: var(--tint); }
+.cat-row:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.cr-sw { width: 11px; height: 11px; border-radius: 3.5px; flex: none; transform: translateY(1px); }
+.cr-c { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; color: var(--copper-deep); min-width: 2.3rem; font-variant-numeric: tabular-nums; }
+.cr-name { font-weight: 600; font-size: 0.9rem; min-width: 0; }
+.cr-meta { display: block; font-weight: 400; font-size: 0.72rem; color: var(--ink-faint); margin-top: 0.12rem; }
+.cr-val { margin-left: auto; font-family: var(--mono); font-size: 0.82rem; color: var(--copper-deep); white-space: nowrap; }
 
 /* stacked bars: the name owns its line, the bar sits beneath */
 .bar-row.stacked {
@@ -821,6 +809,8 @@ select {
 }
 .alpha button:hover { background: var(--tint); }
 .alpha button:disabled { color: var(--rule-strong); cursor: default; background: none; }
+.alpha button.on { background: var(--copper-deep); color: #fff; }
+.alpha button.on:hover { background: var(--copper-deep); }
 @media (max-width: 719px) {
   .alpha { position: sticky; top: var(--tabs-h, 48px); }
   .letter-head { position: static; }
@@ -1207,8 +1197,10 @@ select {
           <span class="sub">Grouped by the filing’s own words — full rule table in Methodology</span>
         </div>
         <p class="card-lede" id="lede-cats">—</p>
-        <div class="dollar-bar" id="dollar-bar" role="img" aria-label="One granted dollar, split by category."></div>
-        <div class="cat-legend" id="cat-legend"></div>
+        <div class="dollar-viz">
+          <div class="penny-grid" id="penny-grid" role="img" aria-label="One granted dollar as one hundred cents."></div>
+          <div class="cat-rows" id="cat-rows"></div>
+        </div>
       </div>
 
       <div class="card rv">
@@ -2015,7 +2007,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       r.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
     });
 
-    // the dollar diagram — cents by largest remainder so they sum to exactly 100
+    // the granted dollar as one hundred pennies — cents by largest remainder, so they sum to exactly 100
     (function () {
       const raw = sCatList.map((c) => c.sum / S_GRAND * 100);
       const floors = raw.map(Math.floor);
@@ -2023,26 +2015,37 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const order = raw.map((v, i) => [v - floors[i], i]).sort((a, b) => b[0] - a[0]);
       const cents = floors.slice();
       for (let k = 0; k < left; k++) cents[order[k % order.length][1]]++;
-      $('dollar-bar').innerHTML = sCatList.map((c, i) => {
-        const pct = raw[i];
-        const inBarName = pct >= 12 ? c.key : c.key.split(' ')[0];
-        return `<button type="button" class="dseg${pct < 7 ? ' is-small' : ''}" data-cat="${esc(c.key)}" style="flex:${pct} 0 0;background:${c.color};--di:${i}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}" aria-label="${esc(c.key)}: ${cents[i] === 0 ? 'under one cent' : cents[i] + ' cents'} of every dollar, ${money(c.sum)} across ${c.count} grants. Opens these grants in the ledger.">
-          <span class="dseg-c"><span class="dc">${cents[i]}¢</span><span class="dn">${esc(inBarName)}</span></span>
-        </button>`;
-      }).join('');
-      $('cat-legend').innerHTML = sCatList.map((c, i) => `
-        <button type="button" class="cl-row" data-cat="${esc(c.key)}" aria-label="Open ${esc(c.key)} grants in the ledger">
-          <span class="cl-sw" style="background:${c.color}"></span>
-          <span class="cl-cents">${cents[i] === 0 ? '<1¢' : cents[i] + '¢'}</span>
-          <span class="cl-name">${esc(c.key)} <span class="cl-n">· ${c.count} ${grantsWord(c.count)}</span></span>
-          <span class="cl-val">${moneyCompact(c.sum)}</span>
+      const grid = $('penny-grid');
+      const cells = [];
+      sCatList.forEach((c, ci) => {
+        for (let k = 0; k < cents[ci]; k++) {
+          cells.push(`<span class="penny" data-cat="${esc(c.key)}" style="--pc:${c.color};--pi:${cells.length}" title="${esc(c.key)} — ${cents[ci]}¢ of the dollar"></span>`);
+        }
+      });
+      grid.innerHTML = cells.join('');
+      grid.setAttribute('aria-label', 'One granted dollar as one hundred cents: '
+        + sCatList.map((c, i) => `${c.key} ${cents[i]}¢`).join(', ') + '.');
+      $('cat-rows').innerHTML = sCatList.map((c, i) => `
+        <button type="button" class="cat-row" data-cat="${esc(c.key)}" aria-label="${esc(c.key)}: ${cents[i] === 0 ? 'under one cent' : cents[i] + ' cents'} of every dollar, ${money(c.sum)} across ${c.count} ${grantsWord(c.count)}. Opens these grants in the ledger.">
+          <span class="cr-sw" style="background:${c.color}"></span>
+          <span class="cr-c">${cents[i] === 0 ? '<1\u00a2' : cents[i] + '\u00a2'}</span>
+          <span class="cr-name">${esc(c.key)}<span class="cr-meta">${c.count} ${grantsWord(c.count)} \u00b7 ${(c.sum / S_GRAND * 100).toFixed(1)}%</span></span>
+          <span class="cr-val">${moneyCompact(c.sum)}</span>
         </button>`).join('');
-      document.querySelectorAll('#dollar-bar .dseg, #cat-legend .cl-row').forEach((el) => {
+      $('cat-rows').querySelectorAll('.cat-row').forEach((el) => {
         el.addEventListener('click', () => {
           state.c = state.c === el.dataset.cat ? null : el.dataset.cat;
           state.page = 0;
           jumpFromOverview();
           setTab('grants');
+        });
+        el.addEventListener('mouseenter', () => {
+          grid.classList.add('dim');
+          grid.querySelectorAll('.penny').forEach((p) => p.classList.toggle('hot', p.dataset.cat === el.dataset.cat));
+        });
+        el.addEventListener('mouseleave', () => {
+          grid.classList.remove('dim');
+          grid.querySelectorAll('.penny.hot').forEach((p) => p.classList.remove('hot'));
         });
       });
     })();
@@ -2110,6 +2113,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
 
   // ---------- recipients ----------
   let recQ = '';
+  let recLetter = null;
   let recSort = 'total';
   let recExpanded = false;
   function renderRecipients() {
@@ -2150,23 +2154,26 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     const alphaEl = $('alpha');
     if (recSort === 'name') {
       list.sort((a, b) => a.display.localeCompare(b.display));
-      const groups = new Map();
+      const groupsAll = new Map();
       list.forEach((e) => {
         const L = (e.display.replace(/^The\s+/i, '')[0] || '#').toUpperCase();
         const key = /[A-Z]/.test(L) ? L : '#';
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(e);
+        if (!groupsAll.has(key)) groupsAll.set(key, []);
+        groupsAll.get(key).push(e);
       });
+      if (recLetter && !groupsAll.has(recLetter)) recLetter = null;
       const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
       alphaEl.hidden = false;
       alphaEl.innerHTML = letters.map((L) =>
-        `<button type="button" data-l="${L}" ${groups.has(L) ? '' : 'disabled'} aria-label="Jump to ${L}">${L}</button>`).join('');
+        `<button type="button" data-l="${L}" class="${recLetter === L ? 'on' : ''}" aria-pressed="${recLetter === L ? 'true' : 'false'}" ${groupsAll.has(L) ? '' : 'disabled'} aria-label="${recLetter === L ? 'Show every letter' : 'Show only ' + L}">${L}</button>`).join('');
       alphaEl.querySelectorAll('button[data-l]:not([disabled])').forEach((b) => {
-        b.addEventListener('click', () => {
-          const t = document.getElementById('letter-' + b.dataset.l);
-          if (t) t.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
-        });
+        b.addEventListener('click', () => { recLetter = recLetter === b.dataset.l ? null : b.dataset.l; renderRecipients(); });
       });
+      const groups = recLetter ? new Map([[recLetter, groupsAll.get(recLetter)]]) : groupsAll;
+      if (recLetter) {
+        const es = groupsAll.get(recLetter);
+        $('rec-count').textContent = `${es.length} under \u201c${recLetter}\u201d${SY !== null ? ' in ' + SY : ''} \u00b7 ${money(es.reduce((s, e) => s + e.total, 0))} \u2014 tap ${recLetter} again for every letter`;
+      }
       $('rec-rows').innerHTML = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([L, es]) => `
         <li class="letter-head" id="letter-${L}">${L}<span class="lh-n">${es.length} · ${money(es.reduce((s,e)=>s+e.total,0))}</span></li>
         ${es.map(item).join('')}`).join('');
@@ -2667,17 +2674,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     });
   }
 
-  // the dollar assembles when it enters view
-  {
-    const bar = document.getElementById('dollar-bar');
-    if (bar && 'IntersectionObserver' in window) {
-      new IntersectionObserver((ens, obs) => {
-        ens.forEach((en) => {
-          if (en.isIntersecting) { bar.classList.add('assembled'); obs.unobserve(bar); }
-        });
-      }, { threshold: 0.35 }).observe(bar);
-    } else if (bar) bar.classList.add('assembled');
-  }
+// (the pennies count themselves out via the card.in reveal)
 
   // the trend draws itself when actually seen — pure CSS class, no shared state
   {
