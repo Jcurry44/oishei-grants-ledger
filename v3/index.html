@@ -178,6 +178,19 @@ h1 {
   color: var(--copper-bright);
   font-variant-numeric: tabular-nums;
 }
+.grand .g-scope {
+  display: flex; align-items: baseline; gap: 0.65rem; flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+.grand .g-scope[hidden] { display: none; }
+.grand .g-scope .gs-label { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cream-faint); }
+.grand .g-scope .gs-val { font-family: var(--serif); font-weight: 600; font-size: clamp(1.5rem, 2.6vw, 2.1rem); letter-spacing: -0.02em; color: #f6efdd; font-variant-numeric: tabular-nums; line-height: 1; }
+.grand .g-scope .gs-meta { font-size: 0.76rem; color: rgba(246, 239, 221, 0.62); }
+.grand .g-scope { opacity: 1; animation: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .grand .g-scope:not([hidden]) { animation: gsIn 0.45s var(--ease) both; }
+}
+@keyframes gsIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .grand .g-rule {
   height: 7px; margin-top: 0.7rem;
   background:
@@ -650,7 +663,15 @@ select {
 /* trend */
 #trend { position: relative; }
 #trend svg { width: 100%; height: auto; display: block; }
-.tr-base, .tr-grid, .tr-area, .tr-line { pointer-events: none; }
+.tr-base, .tr-grid, .tr-area, .tr-line, .tr-band { pointer-events: none; }
+.tr-band { fill: rgba(163, 92, 26, 0.08); }
+#trend svg.scoped .tr-pt { transition: opacity var(--dur); }
+#trend svg.scoped .tr-pt:not(.is-sel) { opacity: 0.45; }
+#trend svg.scoped .tr-pt:not(.is-sel):hover, #trend svg.scoped .tr-pt:not(.is-sel):focus-visible { opacity: 1; }
+.tr-pt.is-sel .tr-val { font-weight: 700; fill: var(--copper-deep); }
+#tr-cards.scoped .tr-card { transition-delay: 0s; }
+#tr-cards.scoped .tr-card:not(.sel) { opacity: 0.72; }
+#tr-cards.scoped .tr-card:not(.sel):hover, #tr-cards.scoped .tr-card:not(.sel):focus-visible { opacity: 1; }
 .tr-base { stroke: var(--rule-strong); stroke-width: 1; }
 .tr-grid { stroke: var(--rule); stroke-width: 1; }
 .tr-area { fill: url(#trFill); }
@@ -1093,6 +1114,7 @@ select {
         <div class="g-val" id="kpi-total">$64,172,055</div>
         <div class="g-rule" aria-hidden="true"></div>
         <div class="g-sub"><span class="tick">✓</span> 857 grants paid out · sum equals the filed totals, every year</div>
+        <div class="g-scope" id="g-scope" hidden></div>
       </div>
     </div>
   </div>
@@ -1133,7 +1155,7 @@ select {
           <span class="snum" aria-hidden="true">I</span>
           <h2>Disbursements by tax year</h2>
           <span class="sec-rule" aria-hidden="true"></span>
-          <span class="sub">Select a year to open it in the ledger</span>
+          <span class="sub">Select a year to scope the page</span>
         </div>
         <p class="card-lede" id="lede-trend">—</p>
         <div id="trend"><div class="tr-tip" id="tr-tip" role="tooltip"></div></div>
@@ -1808,15 +1830,15 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const pct = i === 0 ? null : (byYear[y].sum - byYear[YEARS[i-1]].sum) / byYear[YEARS[i-1]].sum * 100;
       const pctTxt = pct === null ? '' : (pct > 0 ? '+' : '−') + Math.abs(pct).toFixed(0) + '%';
       return `
-        <g class="tr-pt" data-i="${i}" data-y="${y}" tabindex="0" role="button"
-           aria-label="Tax year ${y}: ${money(byYear[y].sum)}, ${byYear[y].count} grants${pct===null?'':', ' + pctTxt + ' versus prior year'}. Activates the year filter.">
+        <g class="tr-pt${sel ? ' is-sel' : ''}" data-i="${i}" data-y="${y}" tabindex="0" role="button"
+           aria-label="Tax year ${y}: ${money(byYear[y].sum)}, ${byYear[y].count} grants${pct===null?'':', ' + pctTxt + ' versus prior year'}. Scopes the whole page to this year.">
           <rect x="${x - 52}" y="${pad.t - 16}" width="104" height="${H - pad.t + 8}" fill="transparent"/>
           <circle cx="${x}" cy="${yy}" r="${sel ? 6.5 : 4.5}" class="tr-dot"/>
           <text x="${x}" y="${yy - 14}" text-anchor="middle" class="tr-val">${moneyCompact(byYear[y].sum)}</text>
         </g>`;
     }).join('');
     const svgHtml = `
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Charitable disbursements by tax year, ${YEARS[0]} through ${LATEST}. ${YEARS.map((y)=>y + ': ' + moneyCompact(byYear[y].sum)).join(', ')}.">
+      <svg viewBox="0 0 ${W} ${H}" class="${state.y !== null ? 'scoped' : ''}" role="img" aria-label="Charitable disbursements by tax year, ${YEARS[0]} through ${LATEST}. ${YEARS.map((y)=>y + ': ' + moneyCompact(byYear[y].sum)).join(', ')}.">
         <defs>
           <linearGradient id="trFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#a35c1a" stop-opacity="0.14"/>
@@ -1824,6 +1846,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
           </linearGradient>
         </defs>
         ${grid}
+        ${state.y !== null ? `<rect class="tr-band" x="${xAt(YEARS.indexOf(state.y)) - 30}" y="10" width="60" height="${H - 18}" rx="8"/>` : ''}
         <line class="tr-base" x1="${pad.l}" y1="${yAt(0)}" x2="${W - pad.r}" y2="${yAt(0)}"/>
         <path class="tr-area" d="${area}"/>
         <path class="tr-line" d="${line}"/>
@@ -1835,13 +1858,14 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     const svgEl = host.querySelector('svg');
     const cardsHost = document.getElementById('tr-cards');
     if (cardsHost) {
+      cardsHost.classList.toggle('scoped', state.y !== null);
       cardsHost.innerHTML = YEARS.map((y, i) => {
         const pct = i === 0 ? null : (byYear[y].sum - byYear[YEARS[i-1]].sum) / byYear[YEARS[i-1]].sum * 100;
         const pctTxt = pct === null ? '' : (pct > 0 ? '+' : '\u2212') + Math.abs(pct).toFixed(0) + '%';
         const sel = state.y === y;
         return `
         <button type="button" class="tr-card${sel ? ' sel' : ''}" data-y="${y}" aria-pressed="${sel}"
-          aria-label="Tax year ${y}: ${money(byYear[y].sum)} across ${byYear[y].count} grants${pct === null ? '' : ', ' + pctTxt + ' versus prior year'}. Opens the year in the ledger.">
+          aria-label="Tax year ${y}: ${money(byYear[y].sum)} across ${byYear[y].count} grants${pct === null ? '' : ', ' + pctTxt + ' versus prior year'}. Scopes the whole page to this year.">
           <span class="ty"><span>${y}</span><span class="chg ${pct !== null && pct < 0 ? 'neg' : 'pos'}">${pctTxt}</span></span>
           <span class="tsum">${moneyCompact(byYear[y].sum)}</span>
           <span class="tct">${byYear[y].count} grants</span>
@@ -1851,7 +1875,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
         c.addEventListener('click', () => {
           const yv = +c.dataset.y;
           state.y = state.y === yv ? null : yv; state.page = 0;
-          jumpFromOverview(); setTab('grants');
+          writeHash(true); render();
         });
       });
     }
@@ -1891,7 +1915,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     host.querySelectorAll('.tr-pt').forEach((g) => {
       const i = +g.dataset.i;
       const y = +g.dataset.y;
-      const act = () => { state.y = state.y === y ? null : y; state.page = 0; jumpFromOverview(); setTab('grants'); };
+      const act = () => { state.y = state.y === y ? null : y; state.page = 0; writeHash(true); render(); };
       g.addEventListener('mouseenter', () => tipShow(i));
       g.addEventListener('mouseleave', tipHide);
       g.addEventListener('focus', () => tipShow(i));
@@ -2475,6 +2499,14 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('kpi-median').textContent = money(md);
     $('kpi-median').parentElement.querySelector('.k-hint').textContent =
       SY === null ? 'Across all 857 grants' : `Across ${byYear[SY].count} grants in ${SY}`;
+    const gs = document.getElementById('g-scope');
+    if (gs) {
+      if (SY === null) gs.hidden = true;
+      else {
+        gs.hidden = false;
+        gs.innerHTML = `<span class="gs-label">In ${SY}</span><span class="gs-val">${money(byYear[SY].sum)}</span><span class="gs-meta">${byYear[SY].count} grants · Δ $0 vs line 25(d)</span>`;
+      }
+    }
     const dEl = $('kpi-delta');
     dEl.classList.remove('up', 'down');
     const dy = SY !== null ? SY : LATEST;
