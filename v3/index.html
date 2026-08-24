@@ -115,7 +115,19 @@ a:hover { color: var(--copper-deep); }
 .topbar a:hover { color: var(--cream); text-decoration: underline; }
 
 .hero { padding: 2.6rem 0 0; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 2.5rem 4rem; align-items: end; }
-@media (max-width: 899px) { .hero { grid-template-columns: 1fr; gap: 1.9rem; padding-top: 2rem; } }
+@media (max-width: 899px) {
+  .hero { grid-template-columns: 1fr; gap: 0; padding-top: 1.5rem; }
+  .hero > div:first-child { display: contents; }
+  .hero h1 { order: 1; font-size: clamp(1.9rem, 8vw, 2.4rem); }
+  .hero .hero-meta { order: 2; margin-bottom: 1.1rem; }
+  .hero .grand { order: 3; margin: 0.2rem 0 1.25rem; }
+  .hero .lede { order: 4; font-size: 0.98rem; margin-bottom: 1.1rem; }
+  .hero .hero-actions { order: 5; flex-direction: column; align-items: stretch; }
+  .hero .hero-actions .btn-primary, .hero .hero-actions .badge-tie { justify-content: center; text-align: center; width: 100%; }
+  .hero .hero-cred { order: 6; margin-top: 0.9rem; }
+  .cover { padding-bottom: 3.4rem; }
+  .topbar .tb-meta { display: none; }
+}
 h1 {
   font-family: var(--serif); font-weight: 600;
   font-size: clamp(2rem, 4.4vw, 3.3rem);
@@ -216,7 +228,11 @@ h1 {
   margin: 2rem 0 1.6rem;
   border-bottom: 1px solid var(--rule-strong);
   overflow-x: auto;
+  position: sticky; top: 0; z-index: 12;
+  background: var(--bg);
+  transition: box-shadow var(--dur);
 }
+.tabs.stuck { box-shadow: 0 12px 26px -20px rgba(30,26,12,0.5); }
 .tab {
   appearance: none; background: none; border: 0; cursor: pointer;
   font-weight: 600; font-size: 0.92rem; color: var(--ink-dim);
@@ -432,6 +448,14 @@ h1 {
 .rec-sort button { appearance: none; cursor: pointer; background: var(--sheet); border: 0; border-right: 1px solid var(--rule); height: 40px; padding: 0 0.9rem; font-size: 0.8rem; font-weight: 600; color: var(--ink-dim); }
 .rec-sort button:last-child { border-right: 0; }
 .rec-sort button.active { background: var(--green); color: #fff; }
+.show-all {
+  appearance: none; cursor: pointer; width: 100%;
+  margin-top: 0.6rem;
+  background: var(--sheet); border: 1px dashed var(--rule-strong); border-radius: var(--r-s);
+  padding: 0.75rem 1rem; font-weight: 600; font-size: 0.84rem; color: var(--green);
+  transition: border-color var(--dur), background var(--dur);
+}
+.show-all:hover { border-color: var(--green); background: var(--green-soft); }
 .alpha {
   display: flex; flex-wrap: wrap; gap: 0.15rem;
   padding: 0.5rem 0 0.65rem; margin-bottom: 0.35rem;
@@ -446,8 +470,8 @@ h1 {
 .alpha button:hover { background: var(--tint); }
 .alpha button:disabled { color: var(--rule-strong); cursor: default; background: none; }
 @media (max-width: 719px) {
-  .alpha { position: static; }
-  .letter-head { top: 0; }
+  .alpha { position: sticky; top: var(--tabs-h, 48px); }
+  .letter-head { position: static; }
 }
 .letter-head {
   position: sticky; top: 47px; z-index: 4;
@@ -530,7 +554,7 @@ h1 {
 .chip-x { font-weight: 700; }
 #clear-all { appearance: none; cursor: pointer; font-size: 0.79rem; font-weight: 600; background: none; border: 0; color: var(--green); text-decoration: underline; padding: 0.4rem 0.3rem; }
 .ledger-tools {
-  position: sticky; top: 0; z-index: 6;
+  position: sticky; top: var(--tabs-h, 48px); z-index: 6;
   background: var(--sheet);
   padding: 0.65rem 0 0.75rem;
   border-bottom: 1px solid var(--rule);
@@ -581,7 +605,7 @@ h1 {
 @media (min-width: 900px) { .table-wrap { overflow: visible; } }
 .grant-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 .grant-table th {
-  position: sticky; top: var(--tools-h); z-index: 2;
+  position: sticky; top: calc(var(--tabs-h, 48px) + var(--tools-h)); z-index: 2;
   background: var(--sheet);
   text-align: left; font-size: 0.69rem; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--ink-faint); padding: 0.65rem 0.6rem;
@@ -614,7 +638,7 @@ h1 {
 @media (max-width: 719px) {
   .table-wrap { display: none; }
   #grant-cards { display: block; }
-  .ledger-tools { position: static; }
+  .ledger-tools { position: sticky; top: var(--tabs-h, 48px); padding: 0.5rem 0 0.55rem; }
 }
 .pager { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding-top: 0.95rem; font-size: 0.8rem; color: var(--ink-dim); }
 .pager button { appearance: none; cursor: pointer; background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: var(--r-s); padding: 0 1rem; height: 44px; transition: all var(--dur); }
@@ -678,8 +702,8 @@ h1 {
   <div class="wrap">
     <div class="topbar">
       <span class="mark">Grants Ledger<span class="tm">.</span></span>
-      <span>TY2020–2024</span>
-      <span>Checked 2026-08-23</span>
+      <span class="tb-meta">TY2020–2024</span>
+      <span class="tb-meta">Checked 2026-08-23</span>
       <span class="spacer"></span>
       <a href="https://projects.propublica.org/nonprofits/organizations/160874319" target="_blank" rel="noopener">The filings ↗</a>
       <a href="https://jcurry44.github.io/" target="_blank" rel="noopener">Curry Studio</a>
@@ -1409,6 +1433,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   // ---------- recipients ----------
   let recQ = '';
   let recSort = 'total';
+  let recExpanded = false;
   function renderRecipients() {
     const top = entList.slice(0, 10);
     const maxT = top[0].total;
@@ -1463,7 +1488,13 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     } else {
       alphaEl.hidden = true;
       list.sort((a, b) => b.total - a.total);
-      $('rec-rows').innerHTML = list.map(item).join('');
+      const N = isMobile() ? 25 : 50;
+      const showAll = recExpanded || q || list.length <= N;
+      const slice = showAll ? list : list.slice(0, N);
+      $('rec-rows').innerHTML = slice.map(item).join('') + (showAll ? '' :
+        `<li><button type="button" class="show-all" id="rec-more">Show all ${list.length} recipients — top ${N} shown, ${money(list.slice(N).reduce((s,e)=>s+e.total,0))} in the rest</button></li>`);
+      const more = document.getElementById('rec-more');
+      if (more) more.addEventListener('click', () => { recExpanded = true; renderRecipients(); });
     }
     $('rec-rows').querySelectorAll('.rec-item').forEach((b) => {
       b.addEventListener('click', () => openProfile(b.dataset.ent));
@@ -1482,6 +1513,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     renderRecipients();
   });
   $('rec-q').addEventListener('input', () => { recQ = $('rec-q').value; renderRecipients(); });
+  // collapse again when the tab is re-entered
+  $('tab-recipients').addEventListener('click', () => { recExpanded = false; });
 
   // ---------- recipient profile drawer ----------
   let lastFocus = null;
@@ -1778,6 +1811,18 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   window.setToolsH = setToolsH;
   function setToolsH() {
     if (toolsEl) document.documentElement.style.setProperty('--tools-h', toolsEl.offsetHeight + 'px');
+    const tabs = document.getElementById('tablist');
+    if (tabs) document.documentElement.style.setProperty('--tabs-h', tabs.offsetHeight + 'px');
+  }
+  {
+    const tabs = document.getElementById('tablist');
+    if (tabs && 'IntersectionObserver' in window) {
+      const s = document.createElement('div');
+      tabs.parentNode.insertBefore(s, tabs);
+      new IntersectionObserver(([en]) => {
+        tabs.classList.toggle('stuck', !en.isIntersecting);
+      }, { threshold: 0 }).observe(s);
+    }
   }
   setToolsH();
   window.addEventListener('resize', () => setTimeout(setToolsH, 120));
