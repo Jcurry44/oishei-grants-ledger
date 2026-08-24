@@ -1313,7 +1313,7 @@ select {
           <div class="lt-row">
             <label class="sr-only" for="q">Search grants</label>
             <div class="q-wrap">
-              <input type="search" id="q" placeholder="Search recipient or purpose…" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="q-suggest">
+              <input type="search" id="q" placeholder="Search recipient, purpose, or place…" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="q-suggest">
               <div class="q-suggest" id="q-suggest" role="listbox" aria-label="Search suggestions" hidden></div>
             </div>
             <label class="sr-only" for="sort">Sort</label>
@@ -1333,9 +1333,9 @@ select {
               <option value="250000">$250K and up</option>
               <option value="1000000">$1M and up</option>
             </select>
-            <label class="sr-only" for="cat-sel">Category</label>
+            <label class="sr-only" for="cat-sel">Purpose</label>
             <select id="cat-sel">
-              <option value="">All categories</option>
+              <option value="">All purposes</option>
             </select>
             <span class="lt-spacer" aria-hidden="true"></span>
             <button type="button" id="csv-btn" class="lt-btn" title="Download the rows currently in view">Export CSV</button>
@@ -2547,12 +2547,23 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   // typeahead: recipients and categories become precise filters; plain text is the fallback
   {
     const qEl = $('q'), box = $('q-suggest');
+    const cityIx = (() => {
+      const m = new Map();
+      grants.forEach((g) => {
+        if (!g.c) return;
+        const k = g.c + '|' + g.s;
+        if (!m.has(k)) m.set(k, { city: g.c, st: g.s, count: 0, sum: 0 });
+        const t = m.get(k); t.count++; t.sum += g.a;
+      });
+      return [...m.values()].sort((a, b) => b.sum - a.sum);
+    })();
     let sugIdx = -1;
     const close = () => { box.hidden = true; box.innerHTML = ''; sugIdx = -1; qEl.setAttribute('aria-expanded', 'false'); };
     const apply = (el) => {
       const t = el.dataset.t;
       if (t === 'r') { state.r = el.dataset.v; state.q = ''; }
       else if (t === 'c') { state.c = el.dataset.v; state.q = ''; }
+      else if (t === 'l') { state.q = el.dataset.v; }
       else { state.q = qEl.value.trim(); }
       state.page = 0; syncControls(); writeHash(true); render(); close();
     };
@@ -2564,8 +2575,10 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       box.innerHTML = ents.map((e) =>
         `<button type="button" class="q-sug" role="option" data-t="r" data-v="${esc(e.id)}"><span class="qs-kind">Recipient</span><span class="qs-name">${esc(dc(e.display))}</span><span class="qs-meta">${e.count} ${grantsWord(e.count)} \u00b7 ${moneyCompact(e.total)}</span></button>`).join('')
         + cats.map((c) =>
-        `<button type="button" class="q-sug" role="option" data-t="c" data-v="${esc(c.key)}"><span class="qs-kind">Category</span><span class="qs-name">${esc(c.key)}</span><span class="qs-meta">${c.count} ${grantsWord(c.count)}</span></button>`).join('')
-        + `<button type="button" class="q-sug" role="option" data-t="q"><span class="qs-kind">Purposes</span><span class="qs-name">Search \u201c${esc(qEl.value.trim())}\u201d in every grant</span></button>`;
+        `<button type="button" class="q-sug" role="option" data-t="c" data-v="${esc(c.key)}"><span class="qs-kind">Purpose</span><span class="qs-name">${esc(c.key)}</span><span class="qs-meta">${c.count} ${grantsWord(c.count)}</span></button>`).join('')
+        + cityIx.filter((x) => (x.city + ', ' + x.st).toLowerCase().includes(v)).slice(0, 3).map((x) =>
+        `<button type="button" class="q-sug" role="option" data-t="l" data-v="${esc(dc(x.city))}"><span class="qs-kind">Location</span><span class="qs-name">${esc(dc(x.city))}, ${esc(x.st)}</span><span class="qs-meta">${x.count} ${grantsWord(x.count)} · ${moneyCompact(x.sum)}</span></button>`).join('')
+        + `<button type="button" class="q-sug" role="option" data-t="q"><span class="qs-kind">Search</span><span class="qs-name">Search \u201c${esc(qEl.value.trim())}\u201d across every field</span></button>`;
       box.hidden = false; sugIdx = -1; qEl.setAttribute('aria-expanded', 'true');
     };
     qEl.addEventListener('input', build);
