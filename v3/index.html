@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex, nofollow">
 <title>The John R. Oishei Foundation — Grants Ledger · 990-PF</title>
 <meta name="description" content="Every grant The John R. Oishei Foundation reported in its Form 990-PF grants-paid schedule, 2020–2024 — 857 grants, $64,172,055, reconciling to Part I line 25(d) to the dollar. An independent presentation built from public IRS filings.">
@@ -523,6 +524,7 @@ h1 {
 /* premium selects */
 .ledger-tools select, .rec-sort { }
 select {
+  max-width: 100%; min-width: 0;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%234e5347' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -708,6 +710,7 @@ select {
 .tr-pt:hover .tr-dot { fill: var(--copper-deep); }
 .tr-pt:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 .tr-val { font-family: var(--mono); font-size: 11px; fill: var(--ink-dim); }
+#main:focus { outline: none; }
 .tr-tick { font-family: var(--mono); font-size: 9.5px; fill: var(--ink-faint); }
 #tr-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.6rem; margin-top: 1rem; }
 .tr-card {
@@ -997,6 +1000,11 @@ select {
 .lt-year:hover { background: var(--tint); color: var(--ink); }
 .lt-year.active { background: var(--green); color: #fff; }
 .lt-year:focus-visible { outline-offset: -2px; }
+@media (max-width: 560px) {
+  #cat-sel { max-width: 100%; flex: 1 1 100%; }
+  .lt-years { display: flex; width: 100%; overflow: visible; }
+  .lt-year { flex: 1 1 0; min-width: 0; padding: 0 0.2rem; font-size: 0.74rem; height: 38px; }
+}
 .lt-spacer { flex: 1 1 auto; }
 .lt-btn {
   appearance: none; cursor: pointer;
@@ -1112,6 +1120,7 @@ select {
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 
 <aside class="side" aria-label="Sections and scope">
   <div class="side-brand">
@@ -1131,7 +1140,6 @@ select {
   </div>
   <div class="side-foot">5 / 5 years reconcile · Δ $0</div>
 </aside>
-<a class="skip" href="#main">Skip to content</a>
 <noscript>
 <div style="max-width:900px;margin:0 auto;padding:0.75rem 1.25rem;font:0.85rem/1.5 sans-serif;color:#f2efe4;background:#1e4634">JavaScript is off — the headline figures are the verified totals; the interactive ledger needs JavaScript.</div>
 </noscript>
@@ -1176,7 +1184,7 @@ select {
 </header>
 
 <div class="wrap">
-  <main id="main">
+  <main id="main" tabindex="-1">
 
   <div class="sheet-kpis" role="group" aria-label="Headline figures">
     <div class="kpi">
@@ -1826,7 +1834,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('tab-' + t).addEventListener('click', () => { returnTo = null; updateReturnChip(); setTab(t); });
   });
   function jumpFromOverview() {
-    returnTo = { tab: state.tab, scrollY: window.scrollY };
+    returnTo = { tab: state.tab, scrollY: window.scrollY, c: state.c, r: state.r, q: state.q, min: state.min };
     updateReturnChip();
   }
   function updateReturnChip() {
@@ -2143,9 +2151,9 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       };
       rows.forEach((el) => {
         el.addEventListener('click', () => {
+          jumpFromOverview();
           state.c = state.c === el.dataset.cat ? null : el.dataset.cat;
           state.page = 0;
-          jumpFromOverview();
           setTab('grants');
         });
         el.addEventListener('mouseenter', () => spotlight(el.dataset.cat));
@@ -2159,9 +2167,9 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       grid.addEventListener('click', (e) => {
         const p = e.target.closest('.penny');
         if (!p) return;
+        jumpFromOverview();
         state.c = state.c === p.dataset.cat ? null : p.dataset.cat;
         state.page = 0;
-        jumpFromOverview();
         setTab('grants');
       });
     })();
@@ -2807,6 +2815,8 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     if (!returnTo) return;
     const to = returnTo;
     returnTo = null;
+    state.c = to.c; state.r = to.r; state.q = to.q; state.min = to.min; state.page = 0;
+    syncControls();
     setTab(to.tab);
     requestAnimationFrame(() => window.scrollTo({ top: to.scrollY, behavior: 'instant' }));
   });
@@ -2861,6 +2871,12 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     });
   }, { threshold: 0.12 });
   document.querySelectorAll('.rv').forEach((el) => rvIO.observe(el));
+
+  // the skip link moves focus itself — the hash router never sees #main
+  document.querySelector('.skip').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('main').focus();
+  });
 
   // the active-tab underline slides instead of jumping
   function positionInk() {
