@@ -319,6 +319,42 @@ h1 {
 .cl-name .cl-n { color: var(--ink-faint); font-size: 0.75rem; }
 .cl-val { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--copper-deep); white-space: nowrap; }
 
+/* the top-5 cascade — they arrive one by one */
+#conc-top5 { margin-top: 1rem; }
+#conc-top5 .bar-row { opacity: 0; transform: translateY(10px); }
+.card.in #conc-top5 .bar-row {
+  animation: waveIn 0.55s var(--ease) both;
+  animation-delay: calc(var(--i) * 140ms + 200ms);
+}
+@keyframes waveIn { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  #conc-top5 .bar-row { opacity: 1; transform: none; animation: none; }
+}
+/* new vs returning: cells are controls, details live below */
+.nr-cell { cursor: pointer; transition: box-shadow var(--dur), background var(--dur); text-align: left; appearance: none; border: 0; font: inherit; }
+.nr-cell:hover { background: var(--tint); }
+.nr-cell.open { box-shadow: inset 0 0 0 2px var(--green); background: var(--tint); }
+.nr-detail {
+  margin-top: 0.8rem;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--green);
+  border-radius: var(--r-s);
+  background: var(--sheet-warm);
+  padding: 0.8rem 0.95rem;
+}
+.nr-detail .nrd-h { font-size: 0.78rem; font-weight: 600; color: var(--ink-dim); margin-bottom: 0.45rem; }
+.nr-detail .nrd-h strong { color: var(--ink); }
+.nr-detail ul { list-style: none; margin: 0; padding: 0; max-height: 264px; overflow: auto; overscroll-behavior: contain; }
+.nrd-row {
+  appearance: none; border: 0; background: none; width: 100%; cursor: pointer; text-align: left;
+  display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0.8rem;
+  padding: 0.32rem 0.25rem; border-radius: 4px;
+  font-size: 0.83rem; align-items: baseline;
+}
+.nrd-row:hover, .nrd-row:focus-visible { background: var(--tint); }
+.nrd-row .n { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nrd-row .a { font-family: var(--mono); color: var(--copper-deep); font-variant-numeric: tabular-nums; }
+
 /* concentration pair */
 .conc-pair { display: flex; height: 18px; border-radius: 9px; overflow: hidden; margin: 0.85rem 0 0.45rem; box-shadow: inset 0 0 0 1px rgba(32,36,30,0.12); }
 .conc-pair .p5 { background: linear-gradient(90deg, var(--copper), var(--copper-deep)); }
@@ -874,6 +910,7 @@ select {
           <div id="conc-share">—</div>
           <div class="conc-pair" aria-hidden="true"><div class="p5" id="conc-bar" style="width:0%"></div><div class="prest" style="flex:1"></div></div>
           <div id="conc-hint">—</div>
+          <div id="conc-top5" aria-label="The five largest recipients"></div>
         </div>
         <div class="card rv">
           <div class="sec-head">
@@ -883,6 +920,7 @@ select {
           </div>
           <p class="card-lede" id="lede-newret">—</p>
           <div class="newret" id="newret"></div>
+          <div class="nr-detail" id="nr-detail" hidden></div>
         </div>
       </div>
 
@@ -1514,6 +1552,21 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('conc-share').textContent = (top5Share * 100).toFixed(1) + '%';
     $('conc-bar').style.width = (top5Share * 100).toFixed(1) + '%';
     $('conc-hint').textContent = `5 organizations — the other ${entList.length - 5} share the remaining ${(100 - top5Share * 100).toFixed(1)}%`;
+    // the five behind the number — they arrive one by one
+    const top5list = entList.slice(0, 5);
+    const maxT5 = top5list[0].total;
+    $('conc-top5').innerHTML = top5list.map((e, i) => barRow(
+      `<span class="rk">${String(i + 1).padStart(2, '0')}</span> ${esc(dc(e.display))}`,
+      e.total, maxT5,
+      { cls: 'is-btn', attrs: `style="--i:${i}" data-ent="${esc(e.id)}" role="button" tabindex="0" aria-label="${esc(dc(e.display))}, ${money(e.total)}, ${(e.total / GRAND * 100).toFixed(1)} percent of all dollars. Opens the profile."`,
+        val: `${money(e.total)}` }
+    )).join('');
+    $('conc-top5').querySelectorAll('.bar-row').forEach((r) => {
+      const go = () => openProfile(r.dataset.ent);
+      r.addEventListener('click', go);
+      r.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+
     // the dollar diagram — cents by largest remainder so they sum to exactly 100
     (function () {
       const shades = ['#8a4a12', '#a35c1a', '#bf7228', '#d18a3f', '#ddA05a', '#e8b87e', '#c9c2ae'];
@@ -1546,8 +1599,47 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     // changes
     $('newret').innerHTML = YEARS.map((y, i) =>
       i === 0
-        ? `<div class="nr-cell${state.y===y?' sel':''}"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} recipients</div><div class="nr-r">baseline year</div></div>`
-        : `<div class="nr-cell${state.y===y?' sel':''}"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} new</div><div class="nr-r">${returningIn[y]} returning</div></div>`).join('');
+        ? `<button type="button" class="nr-cell" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} recipients</div><div class="nr-r">baseline year</div></button>`
+        : `<button type="button" class="nr-cell" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} new</div><div class="nr-r">${returningIn[y]} returning</div></button>`).join('');
+    (function () {
+      const panel = $('nr-detail');
+      let openY = null;
+      function renderDetail(y) {
+        const first = y === YEARS[0];
+        const ents = entList
+          .filter((e) => firstYearOf.get(e.id) === y)
+          .map((e) => ({ e, ySum: e.grants.filter((g) => g.y === y).reduce((s, g) => s + g.a, 0) }))
+          .sort((a, b) => b.ySum - a.ySum);
+        const tot = ents.reduce((s, x) => s + x.ySum, 0);
+        panel.innerHTML = `
+          <div class="nrd-h">${first
+            ? `<strong>${ents.length} recipients</strong> in ${y} — the first filed year in the window, so every organization counts as first-observed · ${money(tot)} that year`
+            : `<strong>${ents.length} first-time recipients</strong> in ${y} · ${money(tot)} in first-year grants — select any to open the profile`}</div>
+          <ul>${ents.map((x) => `
+            <li><button type="button" class="nrd-row" data-ent="${esc(x.e.id)}">
+              <span class="n" title="As filed: ${esc(x.e.aliases.join(' · '))}">${esc(dc(x.e.display))}</span>
+              <span class="a">${money(x.ySum)}</span>
+            </button></li>`).join('')}</ul>`;
+        panel.querySelectorAll('.nrd-row').forEach((b) => {
+          b.addEventListener('click', () => openProfile(b.dataset.ent));
+        });
+      }
+      $('newret').querySelectorAll('.nr-cell').forEach((c) => {
+        c.addEventListener('click', () => {
+          const y = +c.dataset.y;
+          if (openY === y) {
+            openY = null; panel.hidden = true;
+            c.classList.remove('open'); c.setAttribute('aria-expanded', 'false');
+            return;
+          }
+          openY = y;
+          $('newret').querySelectorAll('.nr-cell').forEach((x) => { x.classList.remove('open'); x.setAttribute('aria-expanded', 'false'); });
+          c.classList.add('open'); c.setAttribute('aria-expanded', 'true');
+          renderDetail(y);
+          panel.hidden = false;
+        });
+      });
+    })();
     $('movers').innerHTML = movers.map((m) => `
       <li class="mover" data-ent="${esc(m.e.id)}">
         <button type="button" class="mover-btn">
