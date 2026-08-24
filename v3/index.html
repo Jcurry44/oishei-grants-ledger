@@ -304,21 +304,44 @@ h1 {
 .dseg .dc { font-family: var(--serif); font-weight: 600; font-size: 1.15rem; color: #fff; line-height: 1; }
 .dseg .dn { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.85); white-space: nowrap; }
 .dseg.is-small .dseg-c { display: none; }
-.cat-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 0.15rem 2rem; margin-top: 0.9rem; }
+.cat-legend { display: grid; grid-template-columns: 1fr; gap: 0.1rem; margin-top: 0.9rem; }
+@media (min-width: 1100px) { .cat-legend { grid-template-columns: 1fr 1fr; gap: 0.1rem 2.4rem; } }
 .cl-row {
   appearance: none; border: 0; background: none; width: 100%; cursor: pointer; text-align: left;
-  display: grid; grid-template-columns: 14px minmax(0,1fr) auto; gap: 0.6rem;
-  align-items: baseline; padding: 0.42rem 0.2rem;
+  display: grid; grid-template-columns: 14px 2.6rem minmax(0,1fr) auto; gap: 0.65rem;
+  align-items: baseline; padding: 0.45rem 0.2rem;
   border-bottom: 1px solid var(--rule);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   transition: background var(--dur);
 }
+.cl-cents { font-family: var(--serif); font-weight: 600; color: var(--copper-deep); font-variant-numeric: tabular-nums; }
 .cl-row:hover, .cl-row:focus-visible { background: var(--tint); }
 .cl-sw { width: 14px; height: 14px; border-radius: 4px; transform: translateY(2px); }
-.cl-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-name { font-weight: 500; white-space: normal; }
 .cl-name .cl-n { color: var(--ink-faint); font-size: 0.75rem; }
 .cl-val { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--copper-deep); white-space: nowrap; }
 
+/* stacked bars: the name owns its line, the bar sits beneath */
+.bar-row.stacked {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "label val" "track track";
+  gap: 0.3rem 0.9rem;
+}
+.bar-row.stacked .bar-label { white-space: normal; overflow: visible; text-overflow: clip; }
+/* the return chip — one click back to where you drilled from */
+.return-chip {
+  position: fixed; left: 1rem; bottom: 1rem; z-index: 30;
+  appearance: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: var(--cover); color: var(--cream);
+  border: 1px solid rgba(242,239,228,0.25); border-radius: 999px;
+  font-weight: 600; font-size: 0.82rem;
+  padding: 0 1.1rem; height: 44px;
+  box-shadow: var(--pop-shadow);
+  transition: transform var(--dur) var(--ease), opacity var(--dur);
+}
+.return-chip:hover { transform: translateY(-2px); }
+.return-chip[hidden] { display: none; }
 /* the top-5 cascade — they arrive one by one */
 #conc-top5 { margin-top: 1rem; }
 #conc-top5 .bar-row { opacity: 0; transform: translateY(10px); }
@@ -1112,6 +1135,7 @@ select {
   </div>
 </footer>
 
+<button type="button" class="return-chip" id="return-chip" hidden>← Back to overview</button>
 <div class="pf-backdrop" id="pf-backdrop" hidden></div>
 <aside class="profile" id="profile" role="dialog" aria-modal="true" aria-labelledby="pf-title" hidden>
   <button type="button" class="pf-close" id="pf-close" aria-label="Close recipient profile">✕</button>
@@ -1308,6 +1332,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
 
   // ---------- state (all of it lives in the URL) ----------
   const state = { tab: 'overview', y: null, r: null, c: null, q: '', min: 0, sort: 'amount-desc', page: 0 };
+  let returnTo = null; // {tab, scrollY} set when a drill jumps tabs; one click back
   let profileId = null; // open recipient profile
 
   function readHash() {
@@ -1417,10 +1442,20 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     });
     writeHash(push !== false);
     render();
+    updateReturnChip();
   }
   TABS.forEach((t) => {
-    $('tab-' + t).addEventListener('click', () => setTab(t));
+    $('tab-' + t).addEventListener('click', () => { returnTo = null; updateReturnChip(); setTab(t); });
   });
+  function jumpFromOverview() {
+    returnTo = { tab: state.tab, scrollY: window.scrollY };
+    updateReturnChip();
+  }
+  function updateReturnChip() {
+    const chip = document.getElementById('return-chip');
+    if (!chip) return;
+    chip.hidden = !(returnTo && state.tab !== returnTo.tab);
+  }
   $('tablist').addEventListener('keydown', (e) => {
     const i = TABS.indexOf(state.tab);
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
@@ -1499,7 +1534,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     host.querySelectorAll('.tr-pt').forEach((g) => {
       const i = +g.dataset.i;
       const y = +g.dataset.y;
-      const act = () => { state.y = state.y === y ? null : y; state.page = 0; setTab('grants'); };
+      const act = () => { state.y = state.y === y ? null : y; state.page = 0; jumpFromOverview(); setTab('grants'); };
       g.addEventListener('mouseenter', () => tipShow(i));
       g.addEventListener('mouseleave', tipHide);
       g.addEventListener('focus', () => tipShow(i));
@@ -1558,7 +1593,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('conc-top5').innerHTML = top5list.map((e, i) => barRow(
       `<span class="rk">${String(i + 1).padStart(2, '0')}</span> ${esc(dc(e.display))}`,
       e.total, maxT5,
-      { cls: 'is-btn', attrs: `style="--i:${i}" data-ent="${esc(e.id)}" role="button" tabindex="0" aria-label="${esc(dc(e.display))}, ${money(e.total)}, ${(e.total / GRAND * 100).toFixed(1)} percent of all dollars. Opens the profile."`,
+      { cls: 'is-btn stacked', attrs: `style="--i:${i}" data-ent="${esc(e.id)}" role="button" tabindex="0" aria-label="${esc(dc(e.display))}, ${money(e.total)}, ${(e.total / GRAND * 100).toFixed(1)} percent of all dollars. Opens the profile."`,
         val: `${money(e.total)}` }
     )).join('');
     $('conc-top5').querySelectorAll('.bar-row').forEach((r) => {
@@ -1578,20 +1613,23 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       for (let k = 0; k < left; k++) cents[order[k % order.length][1]]++;
       $('dollar-bar').innerHTML = catList.map((c, i) => {
         const pct = raw[i];
-        return `<button type="button" class="dseg${pct < 9 ? ' is-small' : ''}" data-cat="${esc(c.key)}" style="flex:${pct} 0 0;background:${shades[i % shades.length]}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}" aria-label="${esc(c.key)}: ${cents[i] === 0 ? 'under one cent' : cents[i] + ' cents'} of every dollar, ${money(c.sum)} across ${c.count} grants. Opens these grants in the ledger.">
-          <span class="dseg-c"><span class="dc">${cents[i]}¢</span><span class="dn">${esc(c.key)}</span></span>
+        const inBarName = pct >= 12 ? c.key : c.key.split(' ')[0];
+        return `<button type="button" class="dseg${pct < 7 ? ' is-small' : ''}" data-cat="${esc(c.key)}" style="flex:${pct} 0 0;background:${shades[i % shades.length]}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}" aria-label="${esc(c.key)}: ${cents[i] === 0 ? 'under one cent' : cents[i] + ' cents'} of every dollar, ${money(c.sum)} across ${c.count} grants. Opens these grants in the ledger.">
+          <span class="dseg-c"><span class="dc">${cents[i]}¢</span><span class="dn">${esc(inBarName)}</span></span>
         </button>`;
       }).join('');
       $('cat-legend').innerHTML = catList.map((c, i) => `
         <button type="button" class="cl-row" data-cat="${esc(c.key)}" aria-label="Open ${esc(c.key)} grants in the ledger">
           <span class="cl-sw" style="background:${shades[i % shades.length]}"></span>
+          <span class="cl-cents">${cents[i] === 0 ? '<1¢' : cents[i] + '¢'}</span>
           <span class="cl-name">${esc(c.key)} <span class="cl-n">· ${c.count} ${grantsWord(c.count)}</span></span>
-          <span class="cl-val">${cents[i] === 0 ? '<1¢' : cents[i] + '¢'} · ${moneyCompact(c.sum)}</span>
+          <span class="cl-val">${moneyCompact(c.sum)}</span>
         </button>`).join('');
       document.querySelectorAll('#dollar-bar .dseg, #cat-legend .cl-row').forEach((el) => {
         el.addEventListener('click', () => {
           state.c = state.c === el.dataset.cat ? null : el.dataset.cat;
           state.page = 0;
+          jumpFromOverview();
           setTab('grants');
         });
       });
@@ -1663,7 +1701,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('rec-bars').innerHTML = top.map((e, i) => barRow(
       `<span class="rk">${String(i + 1).padStart(2, '0')}</span> ${esc(dc(e.display))}${e.aliases.length > 1 ? ' <span class="merged-flag" title="Merged from ' + e.aliases.length + ' as-filed name variants — see Methodology">▸' + e.aliases.length + '</span>' : ''}`,
       e.total, maxT,
-      { cls: 'is-btn', attrs: `data-ent="${esc(e.id)}" role="button" tabindex="0" aria-label="${esc(dc(e.display))}, ${money(e.total)}, ${e.count} grants. Opens the recipient profile."` }
+      { cls: 'is-btn stacked', attrs: `data-ent="${esc(e.id)}" role="button" tabindex="0" aria-label="${esc(dc(e.display))}, ${money(e.total)}, ${e.count} grants. Opens the recipient profile."` }
     )).join('');
     $('rec-bars').querySelectorAll('.bar-row').forEach((r) => {
       const go = () => openProfile(r.dataset.ent);
@@ -2055,6 +2093,14 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   }
   setToolsH();
   window.addEventListener('resize', () => setTimeout(setToolsH, 120));
+
+  document.getElementById('return-chip').addEventListener('click', () => {
+    if (!returnTo) return;
+    const to = returnTo;
+    returnTo = null;
+    setTab(to.tab);
+    requestAnimationFrame(() => window.scrollTo({ top: to.scrollY, behavior: reducedMotion() ? 'auto' : 'smooth' }));
+  });
 
   // entrance choreography — staggered within a viewport batch
   const rvIO = new IntersectionObserver((entries) => {
