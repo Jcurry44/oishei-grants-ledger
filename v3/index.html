@@ -139,6 +139,12 @@ h1 {
 .lede { font-family: var(--body-f); color: var(--cream-dim); font-size: 1.04rem; line-height: 1.6; max-width: 46rem; margin: 0 0 1.35rem; }
 .lede strong { color: var(--cream); font-weight: 500; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }
+.hero-note { font-size: 0.78rem; color: rgba(246, 239, 221, 0.82); margin-top: 0.6rem; }
+.hero-note[hidden] { display: none; }
+.hero-note button {
+  appearance: none; background: none; border: 0; cursor: pointer; font: inherit;
+  color: var(--copper-bright); text-decoration: underline; text-underline-offset: 2px; padding: 0;
+}
 .btn-primary {
   appearance: none; cursor: pointer;
   background: var(--copper-bright); color: #241a0c;
@@ -268,6 +274,11 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .tab-ink { display: none; }
   .tabs.has-ink .tab[aria-selected="true"] { border-bottom-color: var(--copper); }
+}
+@media (max-width: 520px) {
+  .tabs { gap: 0; }
+  .tab { flex: 1 1 0; min-width: 0; justify-content: center; padding: 0.72rem 0.1rem 0.8rem; font-size: 0.76rem; }
+  .tab .tcount { display: none; }
 }
 
 /* the sidebar — the desktop app shell, cut from the same cloth as the cover */
@@ -1106,6 +1117,7 @@ select {
           <button type="button" class="btn-primary" id="explore-btn">Explore the grants</button>
           <button type="button" class="badge-tie" id="badge-btn" title="Open the methodology"><span class="tick">✓</span> 5/5 years reconcile · Δ $0</button>
         </div>
+        <div class="hero-note" id="explore-note" hidden></div>
         <p class="hero-cred">An independent presentation by <a href="https://jcurry44.github.io/" target="_blank" rel="noopener">Curry Studio</a> — not affiliated with or endorsed by the foundation.</p>
       </div>
       <div class="grand">
@@ -1225,17 +1237,10 @@ select {
     </section>
 
     <section id="panel-recipients" role="tabpanel" aria-labelledby="tab-recipients" hidden>
-      <div class="card rv">
-        <div class="card-head">
-          <h2>Top recipients</h2>
-          <span class="sub" id="rec-top-sub">All five years · select a bar for the full profile</span>
-        </div>
-        <div id="rec-bars"></div>
-      </div>
       <div class="card">
         <div class="card-head">
           <h2>All recipients</h2>
-          <span class="sub" id="rec-count">—</span>
+          <span class="sub" id="rec-count" aria-live="polite">—</span>
         </div>
         <div class="rec-tools">
           <label class="sr-only" for="rec-q">Search recipients</label>
@@ -1248,6 +1253,13 @@ select {
         <div class="alpha" id="alpha" hidden></div>
         <ul id="rec-rows"></ul>
         <div class="empty" id="rec-empty" hidden>No recipients match — clear the search.</div>
+      </div>
+      <div class="card rv">
+        <div class="card-head">
+          <h2>Top recipients</h2>
+          <span class="sub" id="rec-top-sub">All five years · select a bar for the full profile</span>
+        </div>
+        <div id="rec-bars"></div>
       </div>
     </section>
 
@@ -1749,7 +1761,15 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     writeHash(push !== false);
     render();
     updateReturnChip();
-    if (push !== false) window.scrollTo({ top: 0, behavior: 'instant' });
+    if (push !== false) {
+      if (tab === 'overview') window.scrollTo({ top: 0, behavior: 'instant' });
+      else {
+        const panel = $('panel-' + tab);
+        const tabsEl = document.querySelector('.tabs');
+        const off = (tabsEl && getComputedStyle(tabsEl).display !== 'none' ? tabsEl.offsetHeight : 0) + 10;
+        window.scrollTo({ top: Math.max(0, panel.getBoundingClientRect().top + window.scrollY - off), behavior: 'instant' });
+      }
+    }
   }
   TABS.forEach((t) => {
     $('tab-' + t).addEventListener('click', () => { returnTo = null; updateReturnChip(); setTab(t); });
@@ -2264,6 +2284,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
 
   // ---------- recipient profile drawer ----------
   let lastFocus = null;
+  let profileScopeY = null;
   const bgInert = (on) => {
     [...document.body.children].forEach((el) => {
       if (el.id === 'profile' || el.id === 'pf-backdrop' || el.tagName === 'SCRIPT' || el.tagName === 'NOSCRIPT') return;
@@ -2273,10 +2294,12 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   function openProfile(id, fromHash) {
     const e = entities.get(id);
     if (!e) return;
+    const wasOpen = profileId !== null;
     profileId = id;
+    profileScopeY = state.y;
     state.pr = id;
     if (!fromHash) writeHash(true);
-    lastFocus = document.activeElement;
+    if (!wasOpen) lastFocus = document.activeElement;
     const per = YEARS.map((y) => ({
       y,
       sum: e.grants.filter((g) => g.y === y).reduce((s, g) => s + g.a, 0),
@@ -2316,7 +2339,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     requestAnimationFrame(() => {
       $('profile').classList.add('open');
       $('pf-backdrop').classList.add('open');
-      $('pf-close').focus();
+      if (!wasOpen) $('pf-close').focus();
     });
     document.body.style.overflow = 'hidden';
   }
@@ -2573,6 +2596,24 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     $('kpi-median').textContent = money(md);
     $('kpi-median').parentElement.querySelector('.k-hint').textContent =
       SY === null ? 'Across all 857 grants' : `Across ${byYear[SY].count} grants in ${SY}`;
+    const en = document.getElementById('explore-note');
+    if (en) {
+      const saved = [];
+      if (state.c !== null) saved.push(state.c);
+      if (state.r !== null) { const e = entities.get(state.r); if (e) saved.push(dc(e.display)); }
+      if (state.q) saved.push('\u201c' + state.q + '\u201d');
+      if (state.min) saved.push(moneyCompact(state.min) + '+');
+      if (saved.length && state.tab !== 'grants') {
+        en.hidden = false;
+        en.innerHTML = 'The ledger opens with your saved view \u2014 ' + esc(saved.join(' \u00b7 ')) +
+          ' <button type="button" id="explore-clear">clear it</button>';
+        const bx = document.getElementById('explore-clear');
+        if (bx) bx.addEventListener('click', () => {
+          state.c = null; state.r = null; state.q = ''; state.min = 0; state.page = 0;
+          syncControls(); writeHash(true); render();
+        });
+      } else en.hidden = true;
+    }
     const gs = document.getElementById('g-scope');
     if (gs) {
       if (SY === null) gs.hidden = true;
@@ -2607,7 +2648,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   }
 
   function syncProfile() {
-    if (state.pr !== null && profileId !== state.pr) openProfile(state.pr, true);
+    if (state.pr !== null && (profileId !== state.pr || profileScopeY !== state.y)) openProfile(state.pr, true);
     else if (state.pr === null && profileId !== null) closeProfile(true, true);
   }
   window.addEventListener('hashchange', () => { readHash(); syncControls(); setTab(state.tab, false); syncProfile(); });
