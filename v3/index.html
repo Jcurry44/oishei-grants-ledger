@@ -414,8 +414,12 @@ h1 {
 .dollar-viz { display: grid; grid-template-columns: minmax(230px, 296px) 1fr; gap: 1.4rem 2.4rem; align-items: start; margin-top: 1.1rem; }
 @media (max-width: 899px) { .dollar-viz { grid-template-columns: 1fr; } .penny-grid { max-width: 330px; } }
 .penny-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
-.penny { aspect-ratio: 1; border-radius: 4px; background: var(--pc); transition: opacity var(--dur), transform var(--dur); }
-.penny-grid.dim .penny:not(.hot) { opacity: 0.22; }
+.penny { position: relative; aspect-ratio: 1; border-radius: 4px; background: var(--pc); transition: opacity var(--dur), transform var(--dur); }
+.penny.other { background: transparent; box-shadow: inset 0 0 0 1.5px #a89f8a; }
+.penny b { position: absolute; inset: 0; display: grid; place-items: center; font: 600 9.5px var(--mono); pointer-events: none; }
+.penny b.w { color: rgba(255, 255, 255, 0.92); }
+.penny b.k { color: var(--ink); }
+.penny-grid.dim .penny:not(.hot) { opacity: 0.18; }
 .penny-grid.dim .penny.hot { transform: scale(1.1); }
 .cat-rows { display: flex; flex-direction: column; }
 .cat-row {
@@ -427,6 +431,7 @@ h1 {
 .cat-row:hover, .cat-row.hot { background: var(--tint); }
 .cat-row:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 .cr-sw { width: 11px; height: 11px; border-radius: 3.5px; flex: none; transform: translateY(1px); }
+.cat-row[data-cat="Other filed purposes"] .cr-sw { background: transparent !important; box-shadow: inset 0 0 0 1.5px #a89f8a; }
 .cr-c { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; color: var(--copper-deep); min-width: 2.3rem; font-variant-numeric: tabular-nums; }
 .cr-name { font-weight: 600; font-size: 0.9rem; min-width: 0; }
 .cr-meta { display: block; font-weight: 400; font-size: 0.72rem; color: var(--ink-faint); margin-top: 0.12rem; }
@@ -1605,7 +1610,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   });
   const catList = [...catTotals.entries()].map(([k, v]) => ({ key: k, ...v }))
     .sort((a, b) => b.sum - a.sum);
-  const CAT_SHADES = ['#8a4a12', '#a35c1a', '#bf7228', '#d18a3f', '#dda05a', '#c98a2e', '#6e3a0e', '#9c6b2f', '#b98a52'];
+  const CAT_SHADES = ['#432708', '#5d370d', '#7a4a13', '#96601f', '#b0782f', '#c79045', '#d9aa64', '#e7c28b', '#f1d7b2'];
   { let si = 0; catList.forEach((c) => { c.color = c.key === CAT_OTHER ? '#c9c2ae' : CAT_SHADES[si++ % CAT_SHADES.length]; }); }
   const catColorOf = (k) => { const c = catList.find((x) => x.key === k); return c ? c.color : '#c9c2ae'; };
   // new vs returning (canonical) per year + latest-year movers
@@ -2016,10 +2021,17 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const cents = floors.slice();
       for (let k = 0; k < left; k++) cents[order[k % order.length][1]]++;
       const grid = $('penny-grid');
+      const darkText = (hex) => { // white numerals on dark coins, ink on pale ones
+        const n = parseInt(hex.slice(1), 16);
+        return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) < 145;
+      };
       const cells = [];
       sCatList.forEach((c, ci) => {
+        const hollow = c.key === CAT_OTHER;
         for (let k = 0; k < cents[ci]; k++) {
-          cells.push(`<span class="penny" data-cat="${esc(c.key)}" style="--pc:${c.color};--pi:${cells.length}" title="${esc(c.key)} — ${cents[ci]}¢ of the dollar"></span>`);
+          const label = (k === 0 && cents[ci] >= 4)
+            ? `<b class="${hollow ? 'k' : (darkText(c.color) ? 'w' : 'k')}">${cents[ci]}</b>` : '';
+          cells.push(`<span class="penny${hollow ? ' other' : ''}" data-cat="${esc(c.key)}" style="--pc:${c.color};--pi:${cells.length}" title="${esc(c.key)} — ${cents[ci]}¢ of the dollar">${label}</span>`);
         }
       });
       grid.innerHTML = cells.join('');
@@ -2032,22 +2044,27 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
           <span class="cr-name">${esc(c.key)}<span class="cr-meta">${c.count} ${grantsWord(c.count)} \u00b7 ${(c.sum / S_GRAND * 100).toFixed(1)}%</span></span>
           <span class="cr-val">${moneyCompact(c.sum)}</span>
         </button>`).join('');
-      $('cat-rows').querySelectorAll('.cat-row').forEach((el) => {
+      const rows = [...$('cat-rows').querySelectorAll('.cat-row')];
+      const spotlight = (cat) => {
+        grid.classList.toggle('dim', cat !== null);
+        grid.querySelectorAll('.penny').forEach((p) => p.classList.toggle('hot', p.dataset.cat === cat));
+        rows.forEach((r) => r.classList.toggle('hot', r.dataset.cat === cat));
+      };
+      rows.forEach((el) => {
         el.addEventListener('click', () => {
           state.c = state.c === el.dataset.cat ? null : el.dataset.cat;
           state.page = 0;
           jumpFromOverview();
           setTab('grants');
         });
-        el.addEventListener('mouseenter', () => {
-          grid.classList.add('dim');
-          grid.querySelectorAll('.penny').forEach((p) => p.classList.toggle('hot', p.dataset.cat === el.dataset.cat));
-        });
-        el.addEventListener('mouseleave', () => {
-          grid.classList.remove('dim');
-          grid.querySelectorAll('.penny.hot').forEach((p) => p.classList.remove('hot'));
-        });
+        el.addEventListener('mouseenter', () => spotlight(el.dataset.cat));
+        el.addEventListener('mouseleave', () => spotlight(null));
       });
+      grid.addEventListener('mouseover', (e) => {
+        const p = e.target.closest('.penny');
+        if (p) spotlight(p.dataset.cat);
+      });
+      grid.addEventListener('mouseleave', () => spotlight(null));
     })();
 
 
