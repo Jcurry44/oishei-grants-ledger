@@ -11,12 +11,10 @@
 <meta property="og:title" content="The John R. Oishei Foundation — Grants Ledger">
 <meta property="og:description" content="857 grants · $64,172,055 · five filed years, each reconciling to Part I line 25(d) exactly. Computed from the foundation’s own public 990-PF filings.">
 <meta name="theme-color" content="#1e4634">
-<!-- At deploy: uncomment og:image with the ABSOLUTE hosted URL (scrapers reject relative paths).
-<meta property="og:image" content="https://HOST/PATH/og-card.png">
+<meta property="og:image" content="https://jcurry44.github.io/oishei-grants-ledger/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
--->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e4634'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-family='Georgia,serif' font-size='38' font-weight='700' fill='%23d19049'%3EO%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -554,8 +552,18 @@ select {
 .tr-area { fill: url(#trFill); }
 .tr-line { fill: none; stroke: var(--copper); stroke-width: 2.5; stroke-linecap: round; }
 @media (prefers-reduced-motion: no-preference) {
-  #trend:not(.seen) .tr-line { stroke-dasharray: 1400; stroke-dashoffset: 1400; }
-  #trend.seen .tr-line { stroke-dasharray: 1400; stroke-dashoffset: 0; transition: stroke-dashoffset 1.1s var(--ease); }
+  /* the trend reveals like a wave, left to right: the line draws at constant speed,
+     the wash sweeps beneath it, and each year rings up as the tip arrives (--td is
+     measured off the real path, not guessed) */
+  #trend:not(.seen) .tr-line { stroke-dasharray: var(--plen, 1400); stroke-dashoffset: var(--plen, 1400); }
+  #trend.seen .tr-line { stroke-dasharray: var(--plen, 1400); stroke-dashoffset: 0; transition: stroke-dashoffset 1.4s linear; }
+  #trend:not(.seen) .tr-area { clip-path: inset(-6% 106% -6% -6%); }
+  #trend.seen .tr-area { clip-path: inset(-6% -3% -6% -6%); transition: clip-path 1.4s linear; }
+  .tr-dot { transform-box: fill-box; transform-origin: center; }
+  #trend:not(.seen) .tr-dot { transform: scale(0); }
+  #trend.seen .tr-dot { transform: scale(1); transition: transform 0.45s cubic-bezier(0.34, 1.6, 0.64, 1); transition-delay: var(--td, 0s); }
+  #trend:not(.seen) :is(.tr-val, .tr-year, .tr-pct) { opacity: 0; transform: translateY(5px); }
+  #trend.seen :is(.tr-val, .tr-year, .tr-pct) { opacity: 1; transform: translateY(0); transition: opacity 0.5s var(--ease), transform 0.5s var(--ease); transition-delay: calc(var(--td, 0s) + 0.08s); }
 }
 .tr-dot { fill: var(--copper); stroke: var(--sheet); stroke-width: 2; transition: r var(--dur); }
 .tr-pt { cursor: pointer; }
@@ -1599,6 +1607,22 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     host.appendChild(tipEl);
     host.insertAdjacentHTML('beforeend', svgHtml);
     const svgEl = host.querySelector('svg');
+    { // reveal choreography: delay each year by the tip's real arrival (path length, not guesswork)
+      const lineEl = svgEl.querySelector('.tr-line');
+      const L = lineEl.getTotalLength();
+      host.style.setProperty('--plen', L.toFixed(1));
+      const fracAt = (tx) => {
+        let lo = 0, hi = L;
+        for (let k = 0; k < 18; k++) {
+          const mid = (lo + hi) / 2;
+          if (lineEl.getPointAtLength(mid).x < tx) lo = mid; else hi = mid;
+        }
+        return lo / L;
+      };
+      svgEl.querySelectorAll('.tr-pt').forEach((g, i) => {
+        g.style.setProperty('--td', (fracAt(pts[i][0]) * 1.4).toFixed(2) + 's');
+      });
+    }
     function tipShow(i) {
       const y = YEARS[i];
       const hostRect = host.getBoundingClientRect();
