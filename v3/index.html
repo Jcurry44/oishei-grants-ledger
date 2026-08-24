@@ -400,9 +400,17 @@ h1 {
 /* the top-5 cascade — they arrive one by one */
 #conc-top5 { margin-top: 1rem; }
 #conc-top5 .bar-row { opacity: 0; transform: translateY(10px); }
-.card.in #conc-top5 .bar-row {
+#conc-top5.seen .bar-row {
   animation: waveIn 0.7s var(--ease) both;
   animation-delay: calc(var(--i) * 230ms + 260ms);
+}
+#newret .nr-cell { opacity: 0; transform: translateY(10px); }
+#newret.seen .nr-cell {
+  animation: waveIn 0.7s var(--ease) both;
+  animation-delay: calc(var(--ni) * 160ms + 150ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  #newret .nr-cell { opacity: 1; transform: none; animation: none; }
 }
 @keyframes waveIn { to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
@@ -914,6 +922,19 @@ select {
 .empty { padding: 2.2rem 1rem; text-align: center; color: var(--ink-dim); }
 
 /* methodology */
+.cm-wrap { overflow-x: auto; margin-top: 0.6rem; }
+.cm-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.cm-table th { text-align: left; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-dim); font-weight: 600; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--rule-strong); }
+.cm-table td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.cm-table th:nth-child(n+3), .cm-table .cm-n, .cm-table .cm-v, .cm-table .cm-p { text-align: right; white-space: nowrap; }
+.cm-table .cm-n, .cm-table .cm-v, .cm-table .cm-p { font-family: var(--mono); font-size: 0.75rem; }
+.cm-cat { font-weight: 600; white-space: nowrap; }
+.cm-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 0.45rem; }
+.cm-tier { display: inline-block; margin-left: 0.45rem; font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); border: 1px solid var(--rule); border-radius: 999px; padding: 0.05rem 0.4rem; vertical-align: middle; }
+.cm-kw { color: var(--ink-dim); font-size: 0.73rem; line-height: 1.55; min-width: 260px; }
+.cm-other td { background: var(--sheet-warm); }
+.cm-note { font-size: 0.78rem; color: var(--ink-dim); margin-top: 0.7rem; line-height: 1.6; }
+
 .tie-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 0.75rem; margin-top: 0.6rem; }
 .tie-card { border-radius: var(--r-s); background: var(--sheet-warm); box-shadow: inset 0 0 0 1px var(--rule); padding: 0.85rem 0.95rem; }
 .tc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
@@ -1086,7 +1107,7 @@ select {
           <span class="snum" aria-hidden="true">IV</span>
           <h2>Where a granted dollar goes</h2>
           <span class="sec-rule" aria-hidden="true"></span>
-          <span class="sub">Keyword-derived categories — method in Methodology</span>
+          <span class="sub">Grouped by the filing’s own words — full rule table in Methodology</span>
         </div>
         <p class="card-lede" id="lede-cats">—</p>
         <div class="dollar-bar" id="dollar-bar" role="img" aria-label="One granted dollar, split by category."></div>
@@ -1259,13 +1280,14 @@ select {
         <h3>Canonical recipients</h3>
         <p id="ent-note">—</p>
         <ul id="ent-table"></ul>
-        <h3>Categories</h3>
+        <h3>The purpose map</h3>
         <p>
-          “Where the dollars go” assigns each grant to one category by keywords in the filed purpose
-          text (scholarship, endowment, capital/campus/construction, operating support, emergency
-          response, capacity building; everything else is Programs&nbsp;&amp;&nbsp;other). It is an
-          approximation for orientation — the filed purpose text on every row is the record.
+          “Where a granted dollar goes” assigns each grant to one category by the words of the filing
+          itself — first the filed purpose, then (only when the purpose names no field) the
+          recipient’s filed name. Every rule is published below; anything no rule matches is left
+          unassigned rather than guessed. The filed purpose text on every ledger row remains the record.
         </p>
+        <div id="cat-map"></div>
         <h3>Limitations</h3>
         <p>
           Recipient location is the mailing address on the filing, not a service area. Display casing
@@ -1439,30 +1461,64 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   const top5Share = entList.slice(0, 5).reduce((s, e) => s + e.total, 0) / GRAND;
   const latestDelta = (byYear[LATEST].sum - byYear[PREV].sum) / byYear[PREV].sum;
 
-  // purpose taxonomy — keyword-derived, approximate; method disclosed in Methodology
-  const CATS = [
-    { key: 'Scholarships', rx: /SCHOLARSHIP/ },
-    { key: 'Capital & facilities', rx: /CAPITAL|CAMPUS|CONSTRUCTION|RENOVAT|FACILIT|BUILDING|NAMING RIGHTS/ },
-    { key: 'Endowment', rx: /ENDOWMENT/ },
-    { key: 'General operating', rx: /OPERATING|OPERATIONAL SUPPORT|GENERAL SUPPORT/ },
-    { key: 'Emergency & response', rx: /COVID|EMERGENCY|RESPONSE FUND|RELIEF/ },
-    { key: 'Capacity building', rx: /CAPACITY/ }
+  // purpose taxonomy — two published steps. Step 1: keywords in the filed purpose,
+  // field categories before mechanism categories (a scholarship for a science hall
+  // is education; "capital campaign" alone is capital). Step 2: when the purpose
+  // names no field at all, the same field words are read against the recipient's
+  // filed name. No rule, no guess: the rest stays in "Other filed purposes."
+  // The Methodology mapping table renders FROM these arrays — table and classifier
+  // cannot drift apart.
+  const CAT_OTHER = 'Other filed purposes';
+  const CAT_SUBJECTS = [
+    { key: 'Education & youth',
+      kw: 'SCHOLARSHIP|\\bSCHOOL|ACADEM|COLLEGE|\\bEDUCATION|STUDENT|\\bYOUTH\\b|\\bSTEM\\b|TEACHER|SAY YES|MENTOR|EARLY CHILDHOOD|LITERACY|K-12|K-8|PRE-K|PRESCHOOL|CLASSROOM|TUTORING|AFTER[- ]?SCHOOL|\\bLEARNING\\b|CHILD ?CARE|CITY YEAR|BOYS AND MEN OF COLOR|\\bPREP\\b|BOYS & GIRLS CLUB|BOYS AND GIRLS CLUB' },
+    { key: 'Health & wellbeing',
+      kw: '\\bHEALTHY?\\b|HOSPITAL|MEDICAL|\\bMRI\\b|PATIENT|CANCER|HOSPICE|BEHAVIORAL|MENTAL|WELLNESS|NURSING|CLINIC|RECOVERY RESIDENCE|RECOVERY CENTER|ADDICTION|AUTISM|DISABILIT|RESPITE|CAREGIVER|\\bBLIND\\b|\\bDEAF\\b|THERAPEUT|\\bTRAUMA\\b|EMERGENCY DEPARTMENT|PSYCHIATR|WRAPAROUND' },
+    { key: 'Basic needs & response',
+      kw: 'BASIC HUMAN NEEDS|\\bFOOD\\b|HUNGER|\\bMEALS?\\b|HOUSING|HOMELESS|SHELTER|SAFETY[- ]?NET|POVERTY|REFUGEE|COVID|EMERGENCY|\\bRELIEF\\b|RESPONSE FUND|DISASTER|CRISIS|CHILD ADVOCACY|DOMESTIC VIOLENCE|VETERAN|BUFFALO TOGETHER FUND|\\bPANTR' },
+    { key: 'Arts & culture',
+      kw: '\\bARTS?\\b|\\bMUSIC\\b|THEATRE|THEATER|MUSEUM|CULTURAL|HERITAGE|ORCHESTRA|PHILHARMONIC|GALLERY|\\bFILM\\b|\\bDANCE\\b|\\bOPERAS?\\b|EXHIBIT|ARTIST|BOTANICAL|\\bZOO\\b|AQUARIUM|BROADCASTING|HISTORY|HISTORIC' },
+    { key: 'Community & economic development',
+      kw: 'ECONOMIC|REVITALIZ|NEIGHBORHOOD|WORKFORCE|ENTREPRENEUR|SMALL BUSINESS|CORRIDOR|MOBILITY|\\bJOBS?\\b|EMPLOYMENT|COMMUNITY DEVELOPMENT|MAIN STREET|\\bPARKS?\\b|GARDEN|PLAYGROUND|WATERFRONT|CIVIC|DIGITAL DIVIDE|BROADBAND|TRANSPORTATION|\\bTRAINING\\b|INCUBATOR|TOURISM|OPEN4' },
+    { key: 'Nonprofit capacity & transitions',
+      kw: 'CAPACITY|TRANSITION FUND|NONPROFIT SUPPORT|MERGER|AFFILIATION|SHARED SPACE|SHARED SERVICES|COLLABORATIVE|BACK[- ]?OFFICE|STRATEGIC PLAN|TECHNICAL ASSISTANCE|LEADERSHIP DEVELOPMENT|ACCOUNTING' }
   ];
-  function catOf(g) {
+  const CAT_MECHANISMS = [
+    { key: 'Capital & facilities',
+      kw: 'CAPITAL|CONSTRUCTION|RENOVAT|FACILIT|BUILDING|NAMING RIGHTS|RELOCATION|\\bROOF\\b|HVAC|RESTORATION|ACCESSIBILITY' },
+    { key: 'General operating',
+      kw: 'OPERATING|OPERATIONAL|OPERATIONS|GENERAL SUPPORT|ANNUAL FUND|ANNUAL SUPPORT|UNRESTRICTED' },
+    { key: 'Endowment', kw: 'ENDOWMENT' }
+  ];
+  CAT_SUBJECTS.forEach((c) => { c.rx = new RegExp(c.kw); });
+  CAT_MECHANISMS.forEach((c) => { c.rx = new RegExp(c.kw); });
+  function catInfoOf(g) {
+    if (g._ci) return g._ci;
     const P = g.p.toUpperCase();
-    for (const c of CATS) if (c.rx.test(P)) return c.key;
-    return 'Programs & other';
+    let res = null;
+    for (const c of CAT_SUBJECTS) if (c.rx.test(P)) { res = { key: c.key, step: 1 }; break; }
+    if (!res) for (const c of CAT_MECHANISMS) if (c.rx.test(P)) { res = { key: c.key, step: 1 }; break; }
+    if (!res) {
+      const R = g.r.toUpperCase();
+      for (const c of CAT_SUBJECTS) if (c.rx.test(R)) { res = { key: c.key, step: 2 }; break; }
+    }
+    g._ci = res || { key: CAT_OTHER, step: 0 };
+    return g._ci;
   }
+  function catOf(g) { return catInfoOf(g).key; }
   const catTotals = new Map();
   grants.forEach((g) => {
-    const c = catOf(g);
-    if (!catTotals.has(c)) catTotals.set(c, { sum: 0, count: 0 });
-    const t = catTotals.get(c);
+    const info = catInfoOf(g);
+    if (!catTotals.has(info.key)) catTotals.set(info.key, { sum: 0, count: 0, s2sum: 0, s2count: 0 });
+    const t = catTotals.get(info.key);
     t.sum += g.a; t.count++;
+    if (info.step === 2) { t.s2sum += g.a; t.s2count++; }
   });
   const catList = [...catTotals.entries()].map(([k, v]) => ({ key: k, ...v }))
     .sort((a, b) => b.sum - a.sum);
-
+  const CAT_SHADES = ['#8a4a12', '#a35c1a', '#bf7228', '#d18a3f', '#dda05a', '#c98a2e', '#6e3a0e', '#9c6b2f', '#b98a52'];
+  { let si = 0; catList.forEach((c) => { c.color = c.key === CAT_OTHER ? '#c9c2ae' : CAT_SHADES[si++ % CAT_SHADES.length]; }); }
+  const catColorOf = (k) => { const c = catList.find((x) => x.key === k); return c ? c.color : '#c9c2ae'; };
   // new vs returning (canonical) per year + latest-year movers
   const entYearSum = (e, y) => e.grants.filter((g) => g.y === y).reduce((s, g) => s + g.a, 0);
   const firstYearOf = new Map();
@@ -1500,7 +1556,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       : p.recipient && aliasToId.has(p.recipient) ? aliasToId.get(p.recipient) : null;
     state.q = p.q || '';
     state.min = [0,50000,250000,1000000].includes(+p.min) ? +p.min : 0;
-    const catKeys = CATS.map((c) => c.key).concat(['Programs & other']);
+    const catKeys = CAT_SUBJECTS.concat(CAT_MECHANISMS).map((c) => c.key).concat([CAT_OTHER]);
     state.c = p.cat && catKeys.includes(p.cat) ? p.cat : null;
     state.sort = /^(amount|year|recipient|purpose)-(asc|desc)$/.test(p.sort || '') ? p.sort : 'amount-desc';
     state.page = Math.max(0, (+p.page || 1) - 1);
@@ -1765,8 +1821,9 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       const top5 = entList.slice(0, 5).reduce((s, e) => s + e.total, 0);
       $('lede-conc').innerHTML = `Five organizations received <strong>${money(top5)}</strong> — ${(top5 / GRAND * 100).toFixed(1)}¢ of every dollar granted across the five filed years.`;
       $('lede-newret').innerHTML = `Giving concentrates among returning grantees: <strong>${returningIn[LATEST]} of ${newIn[LATEST] + returningIn[LATEST]}</strong> recipients in ${LATEST} had been funded before.`;
-      const c0 = catList[0], c1 = catList.find((c) => c.key !== 'Programs & other') || catList[1];
-      $('lede-cats').innerHTML = `<strong>${esc(c1.key)}</strong> is the largest named category at <strong>${moneyCompact(c1.sum)}</strong> across ${c1.count} grants; ${esc(c0.key.toLowerCase())} accounts for ${moneyCompact(c0.sum)}.`;
+      const cTop = catList.find((c) => c.key !== CAT_OTHER);
+      const cOther = catList.find((c) => c.key === CAT_OTHER) || { sum: 0, count: 0 };
+      $('lede-cats').innerHTML = `<strong>${esc(cTop.key)}</strong> leads at <strong>${moneyCompact(cTop.sum)}</strong> across ${cTop.count} grants. Where the filing\u2019s words name no field, nothing is guessed \u2014 <strong>${moneyCompact(cOther.sum)}</strong> stays in ${esc(CAT_OTHER.toLowerCase())}.`;
       const m0 = movers[0];
       $('lede-movers').innerHTML = m0
         ? `The largest single swing into ${LATEST}: <strong>${esc(dc(m0.e.display))}</strong>, ${m0.d >= 0 ? 'up' : 'down'} <strong>${moneyCompact(Math.abs(m0.d))}</strong> versus ${PREV}.`
@@ -1798,7 +1855,6 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
 
     // the dollar diagram — cents by largest remainder so they sum to exactly 100
     (function () {
-      const shades = ['#8a4a12', '#a35c1a', '#bf7228', '#d18a3f', '#ddA05a', '#e8b87e', '#c9c2ae'];
       const raw = catList.map((c) => c.sum / GRAND * 100);
       const floors = raw.map(Math.floor);
       let left = 100 - floors.reduce((a, b) => a + b, 0);
@@ -1808,13 +1864,13 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
       $('dollar-bar').innerHTML = catList.map((c, i) => {
         const pct = raw[i];
         const inBarName = pct >= 12 ? c.key : c.key.split(' ')[0];
-        return `<button type="button" class="dseg${pct < 7 ? ' is-small' : ''}" data-cat="${esc(c.key)}" style="flex:${pct} 0 0;background:${shades[i % shades.length]};--di:${i}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}" aria-label="${esc(c.key)}: ${cents[i] === 0 ? 'under one cent' : cents[i] + ' cents'} of every dollar, ${money(c.sum)} across ${c.count} grants. Opens these grants in the ledger.">
+        return `<button type="button" class="dseg${pct < 7 ? ' is-small' : ''}" data-cat="${esc(c.key)}" style="flex:${pct} 0 0;background:${c.color};--di:${i}" title="${esc(c.key)} — ${cents[i] === 0 ? 'under 1' : cents[i]}¢ of every dollar · ${money(c.sum)}" aria-label="${esc(c.key)}: ${cents[i] === 0 ? 'under one cent' : cents[i] + ' cents'} of every dollar, ${money(c.sum)} across ${c.count} grants. Opens these grants in the ledger.">
           <span class="dseg-c"><span class="dc">${cents[i]}¢</span><span class="dn">${esc(inBarName)}</span></span>
         </button>`;
       }).join('');
       $('cat-legend').innerHTML = catList.map((c, i) => `
         <button type="button" class="cl-row" data-cat="${esc(c.key)}" aria-label="Open ${esc(c.key)} grants in the ledger">
-          <span class="cl-sw" style="background:${shades[i % shades.length]}"></span>
+          <span class="cl-sw" style="background:${c.color}"></span>
           <span class="cl-cents">${cents[i] === 0 ? '<1¢' : cents[i] + '¢'}</span>
           <span class="cl-name">${esc(c.key)} <span class="cl-n">· ${c.count} ${grantsWord(c.count)}</span></span>
           <span class="cl-val">${moneyCompact(c.sum)}</span>
@@ -1828,11 +1884,13 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
         });
       });
     })();
+
+
     // changes
     $('newret').innerHTML = YEARS.map((y, i) =>
       i === 0
-        ? `<button type="button" class="nr-cell" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} recipients</div><div class="nr-r">baseline year</div></button>`
-        : `<button type="button" class="nr-cell" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} new</div><div class="nr-r">${returningIn[y]} returning</div></button>`).join('');
+        ? `<button type="button" class="nr-cell" style="--ni:${i}" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} recipients</div><div class="nr-r">baseline year</div></button>`
+        : `<button type="button" class="nr-cell" style="--ni:${i}" data-y="${y}" aria-expanded="false"><div class="nr-y">${y}</div><div class="nr-n">${newIn[y]} new</div><div class="nr-r">${returningIn[y]} returning</div></button>`).join('');
     (function () {
       const panel = $('nr-detail');
       let openY = null;
@@ -2311,6 +2369,43 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     requestAnimationFrame(() => window.scrollTo({ top: to.scrollY, behavior: reducedMotion() ? 'auto' : 'smooth' }));
   });
 
+  // the purpose map — the classifier itself, rendered as a table
+  (function () {
+    const host = $('cat-map');
+    if (!host) return;
+    const kwPretty = (kw) => kw.split('|').map((t) => t
+      .replace(/\\b/g, '')
+      .replace(/\[- \]\?/g, '-')
+      .replace(/ \?/g, ' ')
+      .replace(/S\?/g, '(S)')
+      .replace(/Y\?/g, '(Y)')
+      .toLowerCase()).join(', ');
+    const row = (c, tier) => {
+      const t = catTotals.get(c.key);
+      if (!t) return '';
+      return `<tr>
+        <td class="cm-cat"><span class="cm-sw" style="background:${catColorOf(c.key)}"></span>${esc(c.key)}<span class="cm-tier">${tier}</span></td>
+        <td class="cm-kw">${esc(kwPretty(c.kw))}</td>
+        <td class="cm-n">${t.count}</td>
+        <td class="cm-v">${money(t.sum)}</td>
+        <td class="cm-p">${(t.sum / GRAND * 100).toFixed(1)}%</td>
+      </tr>`;
+    };
+    const other = catTotals.get(CAT_OTHER) || { sum: 0, count: 0 };
+    let s2sum = 0, s2count = 0;
+    catTotals.forEach((t) => { s2sum += t.s2sum || 0; s2count += t.s2count || 0; });
+    host.innerHTML = `<div class="cm-wrap"><table class="cm-table">
+      <thead><tr><th>Category</th><th>Decided by these words</th><th>Grants</th><th>Dollars</th><th>Share</th></tr></thead>
+      <tbody>
+        ${CAT_SUBJECTS.map((c) => row(c, 'field')).join('')}
+        ${CAT_MECHANISMS.map((c) => row(c, 'mechanism')).join('')}
+        <tr class="cm-other"><td class="cm-cat"><span class="cm-sw" style="background:#c9c2ae"></span>${CAT_OTHER}<span class="cm-tier">no rule</span></td>
+          <td class="cm-kw">No listed word appears in the purpose or the recipient name — left unassigned rather than guessed.</td>
+          <td class="cm-n">${other.count}</td><td class="cm-v">${money(other.sum)}</td><td class="cm-p">${(other.sum / GRAND * 100).toFixed(1)}%</td></tr>
+      </tbody></table></div>
+      <p class="cm-note">Field rules run first, top to bottom; a mechanism label (capital, operating, endowment) applies only when the purpose names no field. When the purpose names nothing at all, the same field words are read against the recipient\u2019s filed name — that second step decided ${s2count} grants (${money(s2sum)}); for example \u201cNext Generation Initiative\u201d carries no field, but its recipient — Buffalo Philharmonic Orchestra Society — does. This table <em>is</em> the classifier: the page runs exactly these rules, nothing more.</p>`;
+  })();
+
   // entrance choreography — staggered within a viewport batch
   const rvIO = new IntersectionObserver((entries) => {
     let order = 0;
@@ -2344,6 +2439,20 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     window.addEventListener('resize', positionInk);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(positionInk);
     positionInk();
+  }
+
+  // list waves fire only when the list itself is half in view — not when the card edge peeks
+  {
+    const waveIO = ('IntersectionObserver' in window)
+      ? new IntersectionObserver((ens, obs) => {
+          ens.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('seen'); obs.unobserve(en.target); } });
+        }, { threshold: 0.5 })
+      : null;
+    ['conc-top5', 'newret'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (waveIO) waveIO.observe(el); else el.classList.add('seen');
+    });
   }
 
   // the dollar assembles when it enters view
