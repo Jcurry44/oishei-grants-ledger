@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="canonical" href="https://jcurry44.github.io/oishei-grants-ledger/">
 <meta name="robots" content="noindex, nofollow">
 <title>The John R. Oishei Foundation — Grants Ledger · 990-PF</title>
 <meta name="description" content="Every grant The John R. Oishei Foundation reported in its Form 990-PF grants-paid schedule, 2020–2024 — 857 grants, $64,172,055, reconciling to Part I line 25(d) to the dollar. An independent presentation built from public IRS filings.">
@@ -12,11 +13,12 @@
 <meta property="og:title" content="The John R. Oishei Foundation — Grants Ledger">
 <meta property="og:description" content="857 grants · $64,172,055 · five filed years, each reconciling to Part I line 25(d) exactly. Computed from the foundation’s own public 990-PF filings.">
 <meta name="theme-color" content="#1e4634">
-<meta property="og:image" content="https://jcurry44.github.io/oishei-grants-ledger/og-card.png">
+<!-- At deploy: uncomment og:image with the ABSOLUTE hosted URL (scrapers reject relative paths).
+<meta property="og:image" content="https://HOST/PATH/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="https://jcurry44.github.io/oishei-grants-ledger/">
+-->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e4634'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-family='Georgia,serif' font-size='38' font-weight='700' fill='%23d19049'%3EO%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -435,6 +437,9 @@ h1 {
 .penny b.k { color: var(--ink); }
 .penny-grid.dim .penny:not(.hot) { opacity: 0.18; }
 .penny-grid.dim .penny.hot { transform: scale(1.1); }
+/* the coin grid is a hover instrument; on touch screens and small phones the
+   category rows carry the same figures, so the coins step aside */
+@media (hover: none), (max-width: 640px) { .penny-grid { display: none; } .dollar-viz { grid-template-columns: 1fr; margin-top: 0.5rem; } }
 .cat-rows { display: flex; flex-direction: column; }
 .cat-row {
   appearance: none; background: none; border: 0; font: inherit; cursor: pointer;
@@ -1513,7 +1518,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   const grants = DATA.grants;
   const tieout = DATA.meta.tieout;
   const LATEST = YEARS[YEARS.length - 1];
-  const PREV = YEARS[YEARS.length - 2];
+  const PREV = YEARS.length > 1 ? YEARS[YEARS.length - 2] : null;   // a one-year record has no prior year
 
   // ---------- formatting ----------
   const money = (n) => '$' + Number(n).toLocaleString('en-US');
@@ -1628,7 +1633,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     ? sortedAmts[(sortedAmts.length - 1) / 2]
     : (sortedAmts[sortedAmts.length / 2 - 1] + sortedAmts[sortedAmts.length / 2]) / 2;
   const top5Share = entList.slice(0, 5).reduce((s, e) => s + e.total, 0) / GRAND;
-  const latestDelta = (byYear[LATEST].sum - byYear[PREV].sum) / byYear[PREV].sum;
+  const latestDelta = PREV === null ? null : (byYear[LATEST].sum - byYear[PREV].sum) / byYear[PREV].sum;
 
   // purpose taxonomy — two published steps. Step 1: keywords in the filed purpose,
   // field categories before mechanism categories (a scholarship for a science hall
@@ -1702,7 +1707,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     newIn[y] = nw; returningIn[y] = ret;
   });
   const movers = entList
-    .map((e) => ({ e, prev: entYearSum(e, PREV), cur: entYearSum(e, LATEST) }))
+    .map((e) => ({ e, prev: PREV === null ? 0 : entYearSum(e, PREV), cur: entYearSum(e, LATEST) }))
     .filter((m) => m.prev > 0 || m.cur > 0)
     .map((m) => ({ ...m, d: m.cur - m.prev }))
     .sort((a, b) => Math.abs(b.d) - Math.abs(a.d))
@@ -1893,6 +1898,13 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
   // ---------- overview ----------
   function renderTrend() {
     const host = $('trend');
+    if (YEARS.length < 2) {           // one filed year is not a trend; hide the card entirely
+      const card = $('trend').closest('.card');
+      if (card) card.hidden = true;
+      const cards = document.getElementById('tr-cards');
+      if (cards) cards.hidden = true;
+      return;
+    }
     const tipEl = $('tr-tip');
     const W = 560, H = 228, pad = { t: 34, r: 18, b: 16, l: 36 };
     const maxV = Math.max(...YEARS.map((y) => byYear[y].sum)) * 1.12;
@@ -2040,7 +2052,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
           });
           return [...m.values()].sort((a, b) => b.sum - a.sum).map((c) => ({ ...c, color: catColorOf(c.key) }));
         })();
-    const sPrev = SY === null ? PREV : (SY > YEARS[0] ? SY - 1 : null);
+    const sPrev = SY === null ? PREV : (YEARS.indexOf(SY) > 0 ? YEARS[YEARS.indexOf(SY) - 1] : null);
     const sMovers = SY === null ? movers
       : (sPrev === null ? [] : entList
           .map((e) => ({ e, prev: entYearSum(e, sPrev), cur: entYearSum(e, SY) }))
@@ -2744,7 +2756,7 @@ window.OISHEI_DATA={"meta":{"foundation":"The John R. Oishei Foundation","ein":"
     const dEl = $('kpi-delta');
     dEl.classList.remove('up', 'down');
     const dy = SY !== null ? SY : LATEST;
-    const dp = dy > YEARS[0] ? dy - 1 : null;
+    const dp = YEARS.indexOf(dy) > 0 ? YEARS[YEARS.indexOf(dy) - 1] : null; // prior FILED year, not dy-1 (years can be non-contiguous when one is withheld)
     dEl.parentElement.querySelector('.k-label').textContent = SY === null ? 'Latest year' : 'Year change';
     if (dp === null) {
       dEl.textContent = '—';
